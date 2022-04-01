@@ -15,6 +15,10 @@ public:
 
     bool setPage(u8 no);
 
+    bool setBrightness(u8 level);
+
+    bool reset();
+
 
 private:
     void sendAndWaitForResponse();

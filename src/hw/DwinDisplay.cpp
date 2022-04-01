@@ -16,7 +16,7 @@ u8 outBuffSize = 0;
 static const u8 Header[2] = {0x5A, 0xA5};
 static const u8 ExpectedCheckResponse[4] = {0x83, 0x00, 0x31, 0x01};
 static const u8 SuccessfulWrite[3] = {0x82, 0x4F, 0x4B};
-static const u8 SetPage[2] = {0x5A, 0X01};
+static const u8 SetPage[4] = {0x00, 0x84, 0x5A, 0X01};
 static const u8 WriteOp = 0x82;
 static const u8 ReadOp = 0x83;
 
@@ -156,12 +156,44 @@ bool DwinDisplay::setPage(u8 no) {
     memcpy(outBuff, Header, 2);
     outBuff[2] = 0x07;
     outBuff[3] = WriteOp;
-    outBuff[4] = 0x00;
-    outBuff[5] = 0x84;
-    memcpy(&outBuff[6], SetPage, 2);
+    memcpy(&outBuff[4], SetPage, 4);
     outBuff[8] = (no >> 8) & 0xFF;
     outBuff[9] = no & 0XFF;
     outBuffSize = 10;
+
+    sendAndWaitForResponse();
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+}
+
+bool DwinDisplay::reset() {
+    memcpy(outBuff, Header, 2);
+    outBuff[2] = 0x07; // length
+    outBuff[3] = WriteOp;
+    outBuff[4] = 0x00;
+    outBuff[5] = 0x04;
+    outBuff[6] = 0x55;
+    outBuff[7] = 0xAA;
+    outBuff[8] = 0x5A;
+    outBuff[9] = 0xA5;
+    outBuffSize = 10;
+
+    sendAndWaitForResponse();
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0) && checkConnectivity();
+}
+
+bool DwinDisplay::setBrightness(u8 level) {
+    level = map(level, 0, 255, 0, 0x64);
+
+    memcpy(outBuff, Header, 2);
+    outBuff[2] = 0x05; // length
+    outBuff[3] = WriteOp;
+    outBuff[4] = 0x00;
+    outBuff[5] = 0x82;
+    outBuff[6] = level;
+    outBuff[7] = level;
+    outBuffSize = 8;
 
     sendAndWaitForResponse();
 

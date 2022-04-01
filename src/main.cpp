@@ -78,6 +78,10 @@ void setup() {
         Serial.println("Could not switch page!");
     }
 
+    if (!display.setBrightness(255)) {
+        Serial.println("Could not set brightness");
+    }
+
     Serial.println("Started!");
 }
 
