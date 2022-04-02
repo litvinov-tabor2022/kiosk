@@ -19,6 +19,8 @@ public:
 
     bool setBrightness(u8 level);
 
+    bool disableBeeping();
+
     bool reset();
 
 

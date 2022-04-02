@@ -82,6 +82,10 @@ void setup() {
         Serial.println("Could not set brightness");
     }
 
+    if (!display.disableBeeping()) {
+        Serial.println("Could not disable beeping");
+    }
+
     if (!display.beep(100)) {
         Serial.println("Could not beep");
     }

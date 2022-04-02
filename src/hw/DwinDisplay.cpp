@@ -215,6 +215,23 @@ bool DwinDisplay::setBrightness(u8 level) {
     return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
 }
 
+bool DwinDisplay::disableBeeping() {
+    memcpy(outBuff, Header, 2);
+    outBuff[2] = 0x07; // length
+    outBuff[3] = WriteOp;
+    outBuff[4] = 0x00;
+    outBuff[5] = 0x80;
+    outBuff[6] = 0x5A;
+    outBuff[7] = 0x00;
+    outBuff[8] = 0x00;
+    outBuff[9] = 0x30;
+    outBuffSize = 10;
+
+    sendAndWaitForResponse();
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+}
+
 void DwinDisplay::sendAndWaitForResponse() {
     std::lock_guard<std::mutex> lg(HwLocks::DWIN_SERIAL);
 
@@ -298,4 +315,3 @@ u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
 
     return 0;
 }
-
