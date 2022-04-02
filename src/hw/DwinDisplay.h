@@ -11,7 +11,11 @@ public:
 
     bool readVar(u16 addr, u8 *dest, u8 len);
 
-    bool writeVar(u16 addr, u64 value);
+    bool writeIntVar(u16 addr, u16 value);
+
+    bool writeRawVar(u16 addr, const u8* data, u8 len);
+
+    bool writeTextVar(u16 addr, const std::string& text);
 
     bool setPage(u8 no);
 

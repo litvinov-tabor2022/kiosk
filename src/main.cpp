@@ -62,15 +62,15 @@ void setup() {
 
     Serial.println("Starting...");
 
-    if (!display.writeVar(0x1000, stats.strength)) {
+    if (!display.writeIntVar(0x1000, stats.strength)) {
         Serial.println("err! 1");
     }
 
-    if (!display.writeVar(0x1001, stats.dexterity)) {
+    if (!display.writeIntVar(0x1001, stats.dexterity)) {
         Serial.println("err! 2");
     }
 
-    if (!display.writeVar(0x1002, stats.magic)) {
+    if (!display.writeIntVar(0x1002, stats.magic)) {
         Serial.println("err! 3");
     }
 
@@ -88,6 +88,10 @@ void setup() {
 
     if (!display.beep(100)) {
         Serial.println("Could not beep");
+    }
+
+    if (!display.writeTextVar(0x1005, u8"Žluťoučký kůň úpěl ďábelské ódy.")) {
+        Serial.println("Could not write text");
     }
 
     Serial.println("Started!");

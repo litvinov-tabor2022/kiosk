@@ -1,3 +1,7 @@
+#include <string>
+#include <locale>
+#include <codecvt>
+
 #include "DwinDisplay.h"
 #include "Tasker.h"
 
@@ -109,7 +113,6 @@ bool DwinDisplay::readVar(u16 addr, u8 *dest, u8 len) {
     outBuffSize = 7;
 
     sendAndWaitForResponse();
-    // TODO check for async data :-|
 
     /*
      * Example:
@@ -129,7 +132,7 @@ bool DwinDisplay::readVar(u16 addr, u8 *dest, u8 len) {
     return false;
 }
 
-bool DwinDisplay::writeVar(u16 addr, u64 value) {
+bool DwinDisplay::writeIntVar(u16 addr, u16 value) {
     u8 bAdrL, bAdrH, bValL, bValH;
 
     bAdrL = addr & 0xFF;
@@ -147,7 +150,57 @@ bool DwinDisplay::writeVar(u16 addr, u64 value) {
     outBuffSize = 8;
 
     sendAndWaitForResponse();
-    // TODO check for async data :-|
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+}
+
+bool DwinDisplay::writeRawVar(u16 addr, const u8 *data, const u8 len) {
+    u8 bAdrL, bAdrH;
+
+    bAdrL = addr & 0xFF;
+    bAdrH = (addr >> 8) & 0xFF;
+
+    memcpy(outBuff, Header, 2);
+    outBuff[2] = 3 + len;
+    outBuff[3] = WriteOp;
+    outBuff[4] = bAdrH;
+    outBuff[5] = bAdrL;
+    memcpy(&outBuff[6], data, len);
+    outBuffSize = 6 + len;
+
+    sendAndWaitForResponse();
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+}
+
+bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
+    u8 bAdrL, bAdrH;
+
+    bAdrL = addr & 0xFF;
+    bAdrH = (addr >> 8) & 0xFF;
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> utf16conv;
+    std::u16string utf16 = utf16conv.from_bytes(text);
+
+    memcpy(outBuff, Header, 2);
+    // outBuff[2] is filled later
+    outBuff[3] = WriteOp;
+    outBuff[4] = bAdrH;
+    outBuff[5] = bAdrL;
+
+    outBuffSize = 6;
+    for (char16_t c: utf16) {
+        outBuff[outBuffSize++] = (c >> 8) & 0xFF;
+        outBuff[outBuffSize++] = c & 0xFF;
+    }
+
+    // terminating zero!!!
+    outBuff[outBuffSize++] = 0x00;
+    outBuff[outBuffSize++] = 0x00;
+
+    outBuff[2] = outBuffSize - 3;
+
+    sendAndWaitForResponse();
 
     return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
 }
@@ -244,6 +297,7 @@ void DwinDisplay::sendAndWaitForResponse() {
     hwSerial.write(outBuff, outBuffSize);
 
     // TODO implement timeout
+    // TODO check for async data :-|
 
     inBuffSize = 0;
     u8 i = 0;
