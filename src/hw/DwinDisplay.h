@@ -15,6 +15,8 @@ public:
 
     bool setPage(u8 no);
 
+    bool beep(u16 millis);
+
     bool setBrightness(u8 level);
 
     bool reset();

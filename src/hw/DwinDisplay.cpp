@@ -183,6 +183,21 @@ bool DwinDisplay::reset() {
     return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0) && checkConnectivity();
 }
 
+bool DwinDisplay::beep(const u16 millis) {
+    memcpy(outBuff, Header, 2);
+    outBuff[2] = 0x05; // length
+    outBuff[3] = WriteOp;
+    outBuff[4] = 0x00;
+    outBuff[5] = 0xA0;
+    outBuff[6] = 0x00;
+    outBuff[7] = millis / 8;
+    outBuffSize = 8;
+
+    sendAndWaitForResponse();
+
+    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+}
+
 bool DwinDisplay::setBrightness(u8 level) {
     level = map(level, 0, 255, 0, 0x64);
 
