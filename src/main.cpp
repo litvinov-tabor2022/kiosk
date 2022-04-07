@@ -2,6 +2,7 @@
 
 #include <hw/DwinDisplay.h>
 #include <PortalFramework.h>
+#include <ArduinoJson.h>
 
 //byte buffer[255];
 //
@@ -16,6 +17,35 @@ DwinDisplay display;
 
 u8 freePoints = 5;
 PlayerData stats = PlayerData{.strength = 10, .magic = 10, .dexterity = 10};
+
+void loadSkillJson(u8 id) {
+    File file = SPIFFS.open("/skills.json", FILE_READ);
+
+    if (!file) {
+        Debug.printf("Couldn't load requested file %s!\n", "/skills.json");
+        return;
+    }
+
+    DynamicJsonDocument doc(file.size() * 2);
+
+    const DeserializationError err = deserializeJson(doc, file);
+    if (err) {
+        Debug.printf("ERR loading JSON file %s: '%s'\n", "/skills.json", err.c_str());
+        return;
+    }
+
+    auto skill = doc[String(id)];
+
+    std::string name = skill["name"];
+    std::string description = skill["description"];
+
+    if (!display.writeTextVar(0x1100, name)) {
+        Serial.println("Could not write text");
+    }
+    if (!display.writeTextVar(0x1200, description)) {
+        Serial.println("Could not write text");
+    }
+}
 
 void receiveAsyncData(const u16 addr, const u8 *data, const u8 dataLen) {
     if (addr == 0x1000) {
@@ -45,12 +75,16 @@ void receiveAsyncData(const u16 addr, const u8 *data, const u8 dataLen) {
         stats.magic = value;
         freePoints--;
     }
+    if (addr == 0x2000) {
+        loadSkillJson(map(data[1], 1, 100, 1, 5));
+    }
 
     if (freePoints <= 0) display.setPage(0);
 }
 
 void setup() {
     Serial.begin(115200);
+    SPIFFS.begin();
     delay(500);
 
     Serial.println("Initializing...");
@@ -93,6 +127,8 @@ void setup() {
     if (!display.writeTextVar(0x1005, u8"Žluťoučký kůň úpěl ďábelské ódy.")) {
         Serial.println("Could not write text");
     }
+
+    loadSkillJson(1);
 
     Serial.println("Started!");
 }
