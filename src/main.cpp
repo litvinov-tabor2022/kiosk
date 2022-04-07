@@ -14,6 +14,7 @@
 //}
 
 DwinDisplay display;
+PortalFramework framework;
 
 u8 freePoints = 5;
 PlayerData stats = PlayerData{.strength = 10, .magic = 10, .dexterity = 10};
@@ -91,6 +92,11 @@ void setup() {
 
     if (!display.begin(receiveAsyncData)) {
         Serial.println("Could not initialize the display!");
+        return;
+    }
+
+    if (!framework.begin()) {
+        Serial.println("Could not initialize Portal framework!");
         return;
     }
 
