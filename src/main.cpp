@@ -17,7 +17,7 @@ DwinDisplay display;
 PortalFramework framework;
 
 u8 freePoints = 5;
-PlayerData stats = PlayerData{.strength = 10, .magic = 10, .dexterity = 10};
+PlayerData stats = PlayerData{.user_id = 999, .strength = 10, .magic = 10, .dexterity = 10};
 
 void loadSkillJson(u8 id) {
     File file = SPIFFS.open("/skills.json", FILE_READ);
@@ -90,6 +90,8 @@ void setup() {
 
     Serial.println("Initializing...");
 
+    strcpy(stats.secret, TagSecret.c_str());
+
     if (!display.begin(receiveAsyncData)) {
         Serial.println("Could not initialize the display!");
         return;
@@ -136,6 +138,10 @@ void setup() {
 
     loadSkillJson(1);
 
+    framework.addOnConnectCallback([](PlayerData playerData) {
+        Debug.printf("Connected player: ID %d, strength %d\n", playerData.user_id, playerData.strength);
+    });
+    
     Serial.println("Started!");
 }
 
