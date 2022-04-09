@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include <hw/DwinDisplay.h>
+#include <pages/PagesManager.h>
 #include <PortalFramework.h>
 #include <ArduinoJson.h>
 
@@ -15,9 +16,7 @@
 
 DwinDisplay display;
 PortalFramework framework;
-
-u8 freePoints = 5;
-PlayerData stats = PlayerData{.user_id = 999, .strength = 10, .magic = 10, .dexterity = 10};
+PagesManager pagesManager(&display);
 
 void loadSkillJson(u8 id) {
     File file = SPIFFS.open("/skills.json", FILE_READ);
@@ -48,39 +47,9 @@ void loadSkillJson(u8 id) {
     }
 }
 
+// this is just a syntax-conveniency method...
 void receiveAsyncData(const u16 addr, const u8 *data, const u8 dataLen) {
-    if (addr == 0x1000) {
-        const u8 value = data[1];
-        if (value - stats.strength != 1) {
-            Serial.println("ERROR - diff != 1 for strength");
-            return;
-        }
-        stats.strength = value;
-        freePoints--;
-    }
-    if (addr == 0x1001) {
-        const u8 value = data[1];
-        if (value - stats.dexterity != 1) {
-            Serial.println("ERROR - diff != 1 for dexterity");
-            return;
-        }
-        stats.dexterity = value;
-        freePoints--;
-    }
-    if (addr == 0x1002) {
-        const u8 value = data[1];
-        if (value - stats.magic != 1) {
-            Serial.println("ERROR - diff != 1 for magic");
-            return;
-        }
-        stats.magic = value;
-        freePoints--;
-    }
-    if (addr == 0x2000) {
-        loadSkillJson(map(data[1], 1, 100, 1, 5));
-    }
-
-    if (freePoints <= 0) display.setPage(0);
+    pagesManager.handleAsyncDisplayData(addr, data, dataLen);
 }
 
 void setup() {
@@ -90,46 +59,32 @@ void setup() {
 
     Serial.println("Initializing...");
 
-    strcpy(stats.secret, TagSecret.c_str());
-
     if (!display.begin(receiveAsyncData)) {
-        Serial.println("Could not initialize the display!");
+        Debug.println("Could not initialize the display!");
         return;
     }
 
     if (!framework.begin()) {
-        Serial.println("Could not initialize Portal framework!");
+        Debug.println("Could not initialize Portal framework!");
         return;
     }
 
-    Serial.println("Starting...");
-
-    if (!display.writeIntVar(0x1000, stats.strength)) {
-        Serial.println("err! 1");
+    if (!pagesManager.begin(Page_BonusPoints)) {
+        Debug.println("Could not initialize pages manager!");
     }
 
-    if (!display.writeIntVar(0x1001, stats.dexterity)) {
-        Serial.println("err! 2");
-    }
-
-    if (!display.writeIntVar(0x1002, stats.magic)) {
-        Serial.println("err! 3");
-    }
-
-    if (!display.setPage(1)) {
-        Serial.println("Could not switch page!");
-    }
+    Debug.println("Starting...");
 
     if (!display.setBrightness(255)) {
-        Serial.println("Could not set brightness");
+        Debug.println("Could not set brightness");
     }
 
     if (!display.disableBeeping()) {
-        Serial.println("Could not disable beeping");
+        Debug.println("Could not disable beeping");
     }
 
     if (!display.beep(100)) {
-        Serial.println("Could not beep");
+        Debug.println("Could not beep");
     }
 
     if (!display.writeTextVar(0x1005, u8"Žluťoučký kůň úpěl ďábelské ódy.")) {
@@ -141,7 +96,7 @@ void setup() {
     framework.addOnConnectCallback([](PlayerData playerData) {
         Debug.printf("Connected player: ID %d, strength %d\n", playerData.user_id, playerData.strength);
     });
-    
+
     Serial.println("Started!");
 }
 
