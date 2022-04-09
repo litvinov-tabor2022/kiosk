@@ -73,7 +73,7 @@ bool DwinDisplay::checkConnectivity() {
     // check it works... this reads current display brightness which we give no shit about, but it proves the communication works ;-)
     const u8 buffer[7] = {0x5A, 0xA5, 0x04, 0x83, 0x00, 0x31, 0x01};
     {
-        std::lock_guard<std::mutex> lg(HwLocks::DWIN_SERIAL);
+        std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
         for (u8 i: buffer) {
             hwSerial.write(i);
         }
@@ -100,6 +100,8 @@ bool DwinDisplay::checkConnectivity() {
 }
 
 bool DwinDisplay::readVar(u16 addr, u8 *dest, u8 len) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     u8 bAdrL, bAdrH;
     bAdrL = addr & 0xFF;
     bAdrH = (addr >> 8) & 0xFF;
@@ -133,6 +135,8 @@ bool DwinDisplay::readVar(u16 addr, u8 *dest, u8 len) {
 }
 
 bool DwinDisplay::writeIntVar(u16 addr, u16 value) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     u8 bAdrL, bAdrH, bValL, bValH;
 
     bAdrL = addr & 0xFF;
@@ -155,6 +159,8 @@ bool DwinDisplay::writeIntVar(u16 addr, u16 value) {
 }
 
 bool DwinDisplay::writeRawVar(u16 addr, const u8 *data, const u8 len) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     u8 bAdrL, bAdrH;
 
     bAdrL = addr & 0xFF;
@@ -174,6 +180,8 @@ bool DwinDisplay::writeRawVar(u16 addr, const u8 *data, const u8 len) {
 }
 
 bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     u8 bAdrL, bAdrH;
 
     bAdrL = addr & 0xFF;
@@ -206,6 +214,8 @@ bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
 }
 
 bool DwinDisplay::setPage(u8 no) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     memcpy(outBuff, Header, 2);
     outBuff[2] = 0x07;
     outBuff[3] = WriteOp;
@@ -220,6 +230,8 @@ bool DwinDisplay::setPage(u8 no) {
 }
 
 bool DwinDisplay::reset() {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     memcpy(outBuff, Header, 2);
     outBuff[2] = 0x07; // length
     outBuff[3] = WriteOp;
@@ -237,6 +249,8 @@ bool DwinDisplay::reset() {
 }
 
 bool DwinDisplay::beep(const u16 millis) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     memcpy(outBuff, Header, 2);
     outBuff[2] = 0x05; // length
     outBuff[3] = WriteOp;
@@ -252,6 +266,8 @@ bool DwinDisplay::beep(const u16 millis) {
 }
 
 bool DwinDisplay::setBrightness(u8 level) {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     level = map(level, 0, 255, 0, 0x64);
 
     memcpy(outBuff, Header, 2);
@@ -269,6 +285,8 @@ bool DwinDisplay::setBrightness(u8 level) {
 }
 
 bool DwinDisplay::disableBeeping() {
+    std::lock_guard<std::mutex> lg(opMutex);
+
     memcpy(outBuff, Header, 2);
     outBuff[2] = 0x07; // length
     outBuff[3] = WriteOp;
@@ -286,7 +304,7 @@ bool DwinDisplay::disableBeeping() {
 }
 
 void DwinDisplay::sendAndWaitForResponse() {
-    std::lock_guard<std::mutex> lg(HwLocks::DWIN_SERIAL);
+    std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
 
     if (DWIN_DEBUG) {
         Serial.print("DWIN: Raw data sent: 0x");
@@ -328,7 +346,8 @@ void DwinDisplay::sendAndWaitForResponse() {
 }
 
 u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
-    std::lock_guard<std::mutex> lg(HwLocks::DWIN_SERIAL);
+    std::lock_guard<std::mutex> lg(opMutex);
+    std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
 
     if (hwSerial.available()) {
         inBuffSize = 0;

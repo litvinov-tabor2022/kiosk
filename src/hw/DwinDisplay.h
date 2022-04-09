@@ -4,6 +4,7 @@
 #include "types.h"
 #include "HwLocks.h"
 #include <vector>
+#include <mutex>
 
 class DwinDisplay {
 public:
@@ -34,6 +35,7 @@ private:
     u8 readAsyncData(u16 *addr, u8 *dest);
 
     HardwareSerial hwSerial = HardwareSerial(2);
+    std::mutex opMutex;
 
     u8 asyncDataBuffer[255]{};
 
