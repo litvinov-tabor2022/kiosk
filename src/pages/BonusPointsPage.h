@@ -4,60 +4,79 @@
 #include <utility>
 
 #include "pages/DisplayPage.h"
-#include "pages/PagesManager.h"
 #include "PortalFramework.h"
+
+#define PageAddrs Addrs::User::BonusPoints
 
 class BonusPointsPage : public DisplayPage {
 public:
-    explicit BonusPointsPage(DwinDisplay *display, std::function<void(const PageId pageId)> switchPage) :
-            DisplayPage(display, std::move(switchPage)) {
-        strcpy(stats.secret, TagSecret.c_str());
+    explicit BonusPointsPage(Kiosk *kiosk, DwinDisplay *display, PortalFramework *framework,
+                             std::function<void(const PageId pageId)> switchPage) :
+            DisplayPage(kiosk, display, framework, std::move(switchPage)) {
     };
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
-        if (addr == 0x1000) {
-            const u8 value = data[1];
-            if (value - stats.strength != 1) {
-                Serial.println("ERROR - diff != 1 for strength");
-                return;
-            }
-            stats.strength = value;
-            freePoints--;
-        }
-        if (addr == 0x1001) {
-            const u8 value = data[1];
-            if (value - stats.dexterity != 1) {
-                Serial.println("ERROR - diff != 1 for dexterity");
-                return;
-            }
-            stats.dexterity = value;
-            freePoints--;
-        }
-        if (addr == 0x1002) {
-            const u8 value = data[1];
-            if (value - stats.magic != 1) {
-                Serial.println("ERROR - diff != 1 for magic");
-                return;
-            }
-            stats.magic = value;
-            freePoints--;
+        //TODO create transaction
+
+        switch (addr) {
+            case PageAddrs::Strength:
+                playerData.strength++;
+                playerData.bonus_points--;
+                break;
+            case PageAddrs::Dexterity:
+                playerData.dexterity++;
+                playerData.bonus_points--;
+                break;
+            case PageAddrs::Magic:
+                playerData.magic++;
+                playerData.bonus_points--;
+                break;
         }
 
-        if (freePoints <= 0) switchPage(Page_Main);
+        if (!framework->writePlayerData(playerData)) {
+            Debug.println("Could not update data on tag!");
+            // TODO recover 😱
+            return;
+        }
+
+        if (!display->writeIntVar(PageAddrs::Strength, playerData.strength)) {
+            Debug.println("Could not set display value!");
+            return;
+        }
+        if (!display->writeIntVar(PageAddrs::Dexterity, playerData.dexterity)) {
+            Debug.println("Could not set display value!");
+            return;
+        }
+        if (!display->writeIntVar(PageAddrs::Magic, playerData.magic)) {
+            Debug.println("Could not set display value!");
+            return;
+        }
+
+        if (playerData.bonus_points <= 0) switchPage(Page_UserMain);
     }
 
     bool beforeLoad() override {
-        if (!display->writeIntVar(0x1000, stats.strength)) {
+        Debug.println("Loading bonus page");
+
+        playerData = kiosk->getLastPlayerData();
+
+        //TODO show real name
+        if (!display->writeTextVar(PageAddrs::Name, u8"Jenda")) {
             Debug.println("Could not set display value!");
             return false;
         }
 
-        if (!display->writeIntVar(0x1001, stats.dexterity)) {
+        if (!display->writeIntVar(PageAddrs::Strength, playerData.strength)) {
             Debug.println("Could not set display value!");
             return false;
         }
 
-        if (!display->writeIntVar(0x1002, stats.magic)) {
+        if (!display->writeIntVar(PageAddrs::Dexterity, playerData.dexterity)) {
+            Debug.println("Could not set display value!");
+            return false;
+        }
+
+        if (!display->writeIntVar(PageAddrs::Magic, playerData.magic)) {
             Debug.println("Could not set display value!");
             return false;
         }
@@ -71,8 +90,7 @@ public:
     }
 
 private:
-    u8 freePoints = 5;
-    PlayerData stats = PlayerData{.user_id = 999, .strength = 10, .magic = 10, .dexterity = 10};
+    PlayerData playerData;
 
 };
 
