@@ -41,15 +41,14 @@ bool PagesManager::switchPage(PageId pageId) {
         return false;
     }
 
-    return !isChange || display->setPage(u8(pageId));
+    return !isChange || kiosk->display.setPage(u8(pageId));
 }
 
 void PagesManager::handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) {
     currentPage->handleAsyncDisplayData(addr, data, dataLen);
 }
 
-PagesManager::PagesManager(Kiosk *kiosk, DwinDisplay *display, PortalFramework *framework) :
-        kiosk(kiosk), display(display), framework(framework) {}
+PagesManager::PagesManager(Kiosk *kiosk) : kiosk(kiosk) {}
 
 bool PagesManager::begin() {
     currentPage = &homePage;
@@ -58,7 +57,7 @@ bool PagesManager::begin() {
         return false;
     }
 
-    return display->setPage(u8(Page_Home));
+    return kiosk->display.setPage(u8(Page_Home));
 }
 
 bool PagesManager::reloadPage() {

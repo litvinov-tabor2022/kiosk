@@ -11,9 +11,8 @@
 class AdminMainPage : public DisplayPage {
 
 public:
-    explicit AdminMainPage(Kiosk *kiosk, DwinDisplay *display, PortalFramework *framework,
-                           std::function<void(const PageId pageId)> switchPage) :
-            DisplayPage(kiosk, display, framework, std::move(switchPage)) {
+    explicit AdminMainPage(Kiosk *kiosk, std::function<void(const PageId pageId)> switchPage) :
+            DisplayPage(kiosk, std::move(switchPage)) {
         strcpy(adminTagData.secret, TagSecret.c_str());
     };
 
@@ -21,10 +20,10 @@ public:
         if (addr >= PageAddrs::IncStrength && addr <= PageAddrs::DecMagic) {
             if (!adjustPlayerData(addr)) {
                 Debug.println("Could not write the data!");
-                if (!display->beep(1000)) { Debug.println("Could not beep"); }
+                if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                 return;
             }
-            if (!display->beep(100)) { Debug.println("Could not beep"); }
+            if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
 
             return;
         }
@@ -32,32 +31,32 @@ public:
 
         switch (addr) {
             case PageAddrs::InitAdmin:
-                if (!framework->writePlayerData(adminTagData)) {
+                if (!kiosk->framework.writePlayerData(adminTagData)) {
                     Debug.println("Could not initialize admin tag!");
-                    if (!display->beep(1000)) { Debug.println("Could not beep"); }
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
-                if (!display->beep(100)) { Debug.println("Could not beep"); }
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 Debug.println("Admin tag initialized!");
                 break;
 
             case PageAddrs::InitRandom:
                 if (!initializeRandomTag()) {
                     Debug.println("Could not initialize random user tag!");
-                    if (!display->beep(1000)) { Debug.println("Could not beep"); }
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
-                if (!display->beep(100)) { Debug.println("Could not beep"); }
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 Debug.println("User tag initialized!");
                 break;
 
             case PageAddrs::AddBonusPoint:
                 if (!addBonusPoint()) {
                     Debug.println("Could not write the data!");
-                    if (!display->beep(1000)) { Debug.println("Could not beep"); }
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
-                if (!display->beep(100)) { Debug.println("Could not beep"); }
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 break;
 
             case PageAddrs::Exit:
@@ -71,13 +70,13 @@ public:
 
         // this should prevent going the "show" branch the first time (when the page is actually shown)
         // when tag is present, but it's admin tag...
-        const bool showData = framework->isTagConnected() && isLoaded;
+        const bool showData = kiosk->framework.isTagConnected() && isLoaded;
 
         Debug.println("Loading admin main page");
 
         if (!showPlayerData(showData)) {
             Debug.println("Could not show player data!");
-            if (!display->beep(1000)) { Debug.println("Could not beep"); }
+            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
             return false;
         }
 
@@ -108,7 +107,7 @@ private:
         playerData.dexterity = 10;
         playerData.bonus_points = 5;
 
-        if (!framework->writePlayerData(playerData)) {
+        if (!kiosk->framework.writePlayerData(playerData)) {
             Debug.println("Can't initialize the tag!");
             return false;
         }
@@ -122,7 +121,7 @@ private:
 
         //TODO create transaction
 
-        return framework->writePlayerData(pdata);
+        return kiosk->framework.writePlayerData(pdata);
     }
 
     bool showPlayerData(bool show) {
@@ -130,44 +129,44 @@ private:
             Debug.println("Showing user's data");
 
             //TODO show real name
-            if (!display->writeTextVar(PageAddrs::Name, u8"Jenda")) {
+            if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"Jenda")) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Strength, playerData.strength)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Strength, playerData.strength)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Dexterity, playerData.dexterity)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Dexterity, playerData.dexterity)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Magic, playerData.magic)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Magic, playerData.magic)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
         } else {
             Debug.println("Hiding user's data");
 
-            if (!display->writeTextVar(PageAddrs::Name, u8"-- none --")) {
+            if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"-- none --")) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Strength, 0)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Strength, 0)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Dexterity, 0)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Dexterity, 0)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
 
-            if (!display->writeIntVar(PageAddrs::Magic, 0)) {
+            if (!kiosk->display.writeIntVar(PageAddrs::Magic, 0)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
@@ -200,12 +199,12 @@ private:
                 break;
         }
 
-        if (!framework->writePlayerData(playerData)) {
+        if (!kiosk->framework.writePlayerData(playerData)) {
             Debug.println("Could not write the data!");
-            if (!display->beep(1000)) { Debug.println("Could not beep"); }
+            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
             return false;
         }
-        if (!display->beep(100)) { Debug.println("Could not beep"); }
+        if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
 
         return true;
     }

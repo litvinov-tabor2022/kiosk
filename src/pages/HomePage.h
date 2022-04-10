@@ -8,12 +8,13 @@
 
 class HomePage : public DisplayPage {
 public:
-    explicit HomePage(Kiosk *kiosk, DwinDisplay *display, PortalFramework *framework, std::function<void(const PageId pageId)> switchPage) :
-            DisplayPage(kiosk, display, framework, std::move(switchPage)) {};
+    explicit HomePage(Kiosk *kiosk, std::function<void(const PageId pageId)> switchPage) : DisplayPage(kiosk, std::move(switchPage)) {};
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         if (addr == Addrs::Home::Touch) {
-            if (!display->setBrightness(255)) {
+            if (shouldDim) return; // already planned dim?
+
+            if (!kiosk->display.setBrightness(255)) {
                 Debug.println("Could not set brightness");
                 return;
             }
@@ -23,7 +24,7 @@ public:
             Core0.once("dim", [this] {
                 Tasker::sleep(2000);
                 if (shouldDim) {
-                    if (!display->setBrightness(0)) {
+                    if (!kiosk->display.setBrightness(0)) {
                         Debug.println("Could not set brightness");
                     }
                 }

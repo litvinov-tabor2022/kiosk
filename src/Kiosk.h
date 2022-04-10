@@ -18,6 +18,8 @@ public:
 
     [[nodiscard]] PlayerData getLastPlayerData() const { return lastPlayerData; }
 
+    PortalFramework framework;
+    DwinDisplay display;
 private:
     void handleConnectedTag(PlayerData playerData);
 
@@ -29,8 +31,6 @@ private:
 
     PlayerData lastPlayerData;
 
-    PortalFramework framework;
-    DwinDisplay display;
     PagesManager *pagesManager;
 };
 
