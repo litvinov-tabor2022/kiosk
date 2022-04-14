@@ -206,7 +206,7 @@ bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
     outBuff[outBuffSize++] = 0x00;
     outBuff[outBuffSize++] = 0x00;
 
-    outBuff[2] = outBuffSize - 3;
+    outBuff[2] = outBuffSize - 3; // 3 == header + op
 
     sendAndWaitForResponse();
 
@@ -307,7 +307,7 @@ void DwinDisplay::sendAndWaitForResponse() {
     std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
 
     if (DWIN_DEBUG) {
-        Serial.print("DWIN: Raw data sent: 0x");
+        Serial.printf("DWIN: Raw data sent (%d B): 0x", outBuffSize);
         dumpOutBuff();
         Serial.println();
     }
@@ -333,7 +333,7 @@ void DwinDisplay::sendAndWaitForResponse() {
         }
 
         if (DWIN_DEBUG) {
-            Serial.print("DWIN: Raw data received: 0x");
+            Serial.printf("DWIN: Raw data received (%d B): 0x", inBuffSize);
             dumpInBuff();
             Serial.println();
         }

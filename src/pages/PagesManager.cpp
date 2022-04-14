@@ -16,10 +16,16 @@ bool PagesManager::switchPage(PageId pageId) {
         case Page_BonusPoints:
             newPage = &bonusPointsPage;
             break;
+        case Page_UserSkills:
+            newPage = &skillsPage;
+            break;
             // ------------
             // admin pages:
         case Page_Admin_Main:
             newPage = &adminMainPage;
+            break;
+        case Page_Admin_Error:
+            newPage = &errorPage;
             break;
     }
 
@@ -63,4 +69,11 @@ bool PagesManager::begin() {
 bool PagesManager::reloadPage() {
     Debug.println("Reloading page");
     return currentPage->beforeLoad();
+}
+
+bool PagesManager::showErrorPage(const std::string &message) {
+    return kiosk->display.writeTextVar(Addrs::Admin::Error::Text, message) &&
+           switchPage(Page_Admin_Error) &&
+           kiosk->display.beep(1000) &&
+           kiosk->display.setBrightness(255);
 }

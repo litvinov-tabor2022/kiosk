@@ -1,6 +1,3 @@
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-
 #ifndef KIOSK_BONUSPOINTSPAGE_H
 #define KIOSK_BONUSPOINTSPAGE_H
 
@@ -61,8 +58,7 @@ public:
 
         playerData = kiosk->getLastPlayerData();
 
-        //TODO show real name
-        if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"Jenda")) {
+        if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name)) {
             Debug.println("Could not set display value!");
             return false;
         }

@@ -3,6 +3,7 @@
 
 #include <hw/DwinDisplay.h>
 #include <PortalFramework.h>
+#include <Resources.h>
 
 class PagesManager;
 

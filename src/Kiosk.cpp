@@ -3,7 +3,7 @@
 #include <pages/PagesManager.h>
 
 Kiosk::Kiosk() {
-    pagesManager = new PagesManager(this, &display, &framework);
+    pagesManager = new PagesManager(this);
 }
 
 bool Kiosk::begin() {
@@ -14,17 +14,22 @@ bool Kiosk::begin() {
         return false;
     }
 
-    if (!framework.begin()) {
-        Debug.println("Could not initialize Portal framework!");
-        return false;
-    }
-
     if (!pagesManager->begin()) {
         Debug.println("Could not initialize pages manager!");
         return false;
     }
 
-    // setup
+     //TODO display error on display
+
+    const std::optional<std::string> &frInit = framework.begin();
+    if (frInit.has_value()) {
+        Debug.println("Could not initialize Portal framework!");
+        Debug.println(*frInit->c_str());
+        pagesManager->showErrorPage(*frInit);
+        return false;
+    }
+
+    // everything OK, let's setup
 
     if (!display.setBrightness(0)) {
         Debug.println("Could not set brightness");
@@ -66,8 +71,8 @@ void Kiosk::handleConnectedTag(PlayerData playerData) {
                 Debug.println("Could not reload page");
             }
         } else {
-            //TODO this will probably fail when having more than one page...
-            pagesManager->switchPage(playerData.bonus_points > 0 ? Page_BonusPoints : Page_UserMain);
+//            pagesManager->switchPage(playerData.bonus_points > 0 ? Page_BonusPoints : Page_UserMain);
+            pagesManager->switchPage(Page_UserSkills);
         }
     }
 }

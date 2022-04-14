@@ -128,8 +128,7 @@ private:
         if (show) {
             Debug.println("Showing user's data");
 
-            //TODO show real name
-            if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"Jenda")) {
+            if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name) ){
                 Debug.println("Could not set display value!");
                 return false;
             }
