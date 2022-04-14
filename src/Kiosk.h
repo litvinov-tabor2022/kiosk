@@ -15,6 +15,8 @@ public:
 
     [[nodiscard]] bool isAdminMode() const { return adminMode; }
 
+    [[nodiscard]] bool isAdminTagPresent() const { return adminTagPresent; }
+
     void disableAdminMode();
 
     [[nodiscard]] PlayerData getLastPlayerData() const { return lastPlayerData; }
@@ -29,6 +31,7 @@ private:
     void enableAdminMode();
 
     bool adminMode = false;
+    bool adminTagPresent = false;
 
     PlayerData lastPlayerData;
 

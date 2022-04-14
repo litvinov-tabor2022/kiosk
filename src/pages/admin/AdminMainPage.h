@@ -16,6 +16,7 @@ public:
         strcpy(adminTagData.secret, TagSecret.c_str());
     };
 
+    // TODO replicate the last tag
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         if (addr >= PageAddrs::IncStrength && addr <= PageAddrs::DecMagic) {
             if (!adjustPlayerData(addr)) {
@@ -51,6 +52,12 @@ public:
                 break;
 
             case PageAddrs::AddBonusPoint:
+                if (kiosk->isAdminTagPresent()) {
+                    Debug.println("Can't add bonus points - admin tag present!");
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+                    return;
+                }
+
                 if (!addBonusPoint()) {
                     Debug.println("Could not write the data!");
                     if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
@@ -128,7 +135,7 @@ private:
         if (show) {
             Debug.println("Showing user's data");
 
-            if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name) ){
+            if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name)) {
                 Debug.println("Could not set display value!");
                 return false;
             }

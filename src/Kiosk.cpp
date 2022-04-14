@@ -61,6 +61,7 @@ void Kiosk::handleConnectedTag(PlayerData playerData) {
     display.setBrightness(255);
 
     if (playerData.user_id == ADMIN_USER_ID) {
+        adminTagPresent = true;
         Debug.println("Admin tag inserted");
 
         if (!this->adminMode) enableAdminMode();
@@ -71,14 +72,14 @@ void Kiosk::handleConnectedTag(PlayerData playerData) {
                 Debug.println("Could not reload page");
             }
         } else {
-//            pagesManager->switchPage(playerData.bonus_points > 0 ? Page_BonusPoints : Page_UserMain);
-            pagesManager->switchPage(Page_UserSkills);
+            pagesManager->switchPage(playerData.bonus_points > 0 ? Page_BonusPoints : Page_UserMain);
         }
     }
 }
 
 void Kiosk::handleDisconnectedTag() {
     Debug.println("Tag disconnected");
+    adminTagPresent = false; // definitely
 
     if (this->adminMode) {
         if (!pagesManager->reloadPage()) {

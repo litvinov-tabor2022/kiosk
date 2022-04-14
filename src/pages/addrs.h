@@ -46,6 +46,10 @@ public:
             static const u16 Dexterity = 0x1001;
             static const u16 Magic = 0x1002;
             static const u16 Name = 0x1005;
+
+            static const u16 IncStrength = 0x1100;
+            static const u16 IncDexterity = 0x1101;
+            static const u16 IncMagic = 0x1102;
         } bp;
 
         const struct Skills {

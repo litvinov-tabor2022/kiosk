@@ -17,15 +17,15 @@ public:
         //TODO create transaction
 
         switch (addr) {
-            case PageAddrs::Strength:
+            case PageAddrs::IncStrength:
                 playerData.strength++;
                 playerData.bonus_points--;
                 break;
-            case PageAddrs::Dexterity:
+            case PageAddrs::IncDexterity:
                 playerData.dexterity++;
                 playerData.bonus_points--;
                 break;
-            case PageAddrs::Magic:
+            case PageAddrs::IncMagic:
                 playerData.magic++;
                 playerData.bonus_points--;
                 break;
