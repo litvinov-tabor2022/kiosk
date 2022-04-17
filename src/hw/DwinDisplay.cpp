@@ -23,6 +23,7 @@ static const u8 SuccessfulWrite[3] = {0x82, 0x4F, 0x4B};
 static const u8 SetPage[4] = {0x00, 0x84, 0x5A, 0X01};
 static const u8 WriteOp = 0x82;
 static const u8 ReadOp = 0x83;
+static const u8 TextColorSpOffset = 0x0003;
 
 // ------------------------------
 
@@ -213,6 +214,10 @@ bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
     return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
 }
 
+bool DwinDisplay::setTextDisplayColor(u16 spAddr, const Color color) {
+    return writeIntVar(spAddr + TextColorSpOffset, toHighColor(color.r, color.g, color.b));
+}
+
 bool DwinDisplay::setPage(u8 no) {
     std::lock_guard<std::mutex> lg(opMutex);
 
@@ -387,4 +392,15 @@ u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
     }
 
     return 0;
+}
+
+u16 DwinDisplay::toHighColor(const u8 r, const u8 g, const u8 b) {
+    // FFFFFF -> FFFF = 11111 111111 11111
+    // C00000 -> C000 = 11000 000000 00000 ( 1100 0000 -> 1 1000 = x >> 3 )
+    // 0000FF -> 001F = 00000 000000 11111
+    // FF0000 -> F800 = 11111 000000 00000
+    // 00C000 -> 0600 = 00000 110000 00000 ( 1100 0000 -> 11 0000 = x >> 2 )
+
+    // I REALLY don't want to study operators precedence here... brackets to the rescue.
+    return (((r >> 3) & 0x1F) << 11) + (((g >> 2) & 0x3F) << 5) + (((b >> 3) & 0x1F));
 }
