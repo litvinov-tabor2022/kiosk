@@ -7,6 +7,7 @@ enum PageId {
     Page_UserSkills = 2,
     Page_BonusPoints = 1,
     Page_Admin_Main = 3,
+    Page_Admin_Skills = 6,
     Page_Admin_Error = 5,
 };
 
@@ -19,6 +20,7 @@ enum PageId {
 #include "pages/BonusPointsPage.h"
 #include "pages/SkillsPage.h"
 #include "pages/admin/AdminMainPage.h"
+#include "pages/admin/AdminSkillsPage.h"
 #include "pages/admin/ErrorPage.h"
 // ------
 
@@ -50,6 +52,7 @@ private:
     SkillsPage skillsPage = SkillsPage(kiosk, [this](const PageId pageId) { this->switchPage(pageId); });
 
     AdminMainPage adminMainPage = AdminMainPage(kiosk, [this](const PageId pageId) { this->switchPage(pageId); });
+    AdminSkillsPage adminSkillsPage = AdminSkillsPage(kiosk, [this](const PageId pageId) { this->switchPage(pageId); });
     ErrorPage errorPage = ErrorPage(kiosk, [this](const PageId pageId) { this->switchPage(pageId); });
 };
 

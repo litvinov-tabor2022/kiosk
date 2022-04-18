@@ -12,6 +12,7 @@ public:
             static const u16 InitRandom = 0x1100;
             static const u16 InitAdmin = 0x1101;
             static const u16 AddBonusPoint = 0x1102;
+            static const u16 Skills = 0x1104;
             static const u16 Exit = 0x1103;
 
             static const u16 Strength = 0x1000;
@@ -26,6 +27,18 @@ public:
             static const u16 DecDexterity = 0x1021;
             static const u16 DecMagic = 0x1031;
         } m;
+        const struct Skills {
+            static const u16 Name = 0x1005;
+
+            static const u16 BackButton = 0x1010;
+            static const u16 PrevButton = 0x1011;
+            static const u16 NextButton = 0x1012;
+
+            static const u16 VpAddrBase = 0x1100;
+            static const u16 SpAddrBase = 0x2100;
+            static const u16 ClickAddrBase = 0x3100;
+            // other skill addrs for texts are derived: Base + row * 0x0100 + col * 0x0030
+        } s;
         const struct Error {
             static const u16 Text = 0X1000;
         } e;

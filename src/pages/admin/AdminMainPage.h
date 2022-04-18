@@ -58,12 +58,33 @@ public:
                     return;
                 }
 
+                if (!kiosk->framework.isTagConnected()) {
+                    Debug.println("Can't add bonus points - no tag present");
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+                    return;
+                }
+
                 if (!addBonusPoint()) {
                     Debug.println("Could not write the data!");
                     if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
                 if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+                break;
+
+            case PageAddrs::Skills:
+                if (kiosk->isAdminTagPresent()) {
+                    Debug.println("Can't show skills - admin tag present!");
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+                    return;
+                }
+
+                if (!kiosk->framework.isTagConnected()) {
+                    Debug.println("Can't show skills page - no tag present");
+                    return;
+                }
+
+                switchPage(Page_Admin_Skills);
                 break;
 
             case PageAddrs::Exit:
@@ -73,13 +94,10 @@ public:
     }
 
     bool beforeLoad() override {
+        const bool showData = kiosk->framework.isTagConnected() && !kiosk->isAdminTagPresent();
+
+        Debug.printf("Loading admin main page, will%s show data\n", showData ? "" : " NOT");
         playerData = kiosk->getLastPlayerData();
-
-        // this should prevent going the "show" branch the first time (when the page is actually shown)
-        // when tag is present, but it's admin tag...
-        const bool showData = kiosk->framework.isTagConnected() && isLoaded;
-
-        Debug.println("Loading admin main page");
 
         if (!showPlayerData(showData)) {
             Debug.println("Could not show player data!");
@@ -131,8 +149,6 @@ private:
 
     bool showPlayerData(bool show) {
         if (show) {
-            Debug.println("Showing user's data");
-
             if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->getPlayerMetadata(playerData.user_id).name)) {
                 Debug.println("Could not set display value!");
                 return false;
@@ -153,8 +169,6 @@ private:
                 return false;
             }
         } else {
-            Debug.println("Hiding user's data");
-
             if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"-- none --")) {
                 Debug.println("Could not set display value!");
                 return false;

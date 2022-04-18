@@ -24,6 +24,9 @@ bool PagesManager::switchPage(PageId pageId) {
         case Page_Admin_Main:
             newPage = &adminMainPage;
             break;
+        case Page_Admin_Skills:
+            newPage = &adminSkillsPage;
+            break;
         case Page_Admin_Error:
             newPage = &errorPage;
             break;
