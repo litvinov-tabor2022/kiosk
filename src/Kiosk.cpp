@@ -19,13 +19,23 @@ bool Kiosk::begin() {
         return false;
     }
 
-     //TODO display error on display
-
     const std::optional<std::string> &frInit = framework.begin();
     if (frInit.has_value()) {
         Debug.println("Could not initialize Portal framework!");
         Debug.println(*frInit->c_str());
         pagesManager->showErrorPage(*frInit);
+        return false;
+    }
+
+    if ((skillsList = framework.resources.loadSkillsList()) == nullptr) {
+        Debug.println("Could not load skills list!");
+        pagesManager->showErrorPage("Could not load skills list!");
+        return false;
+    }
+
+    if ((playersMetadata = framework.resources.loadPlayersMeta()) == nullptr) {
+        Debug.println("Could not load players metadata!");
+        pagesManager->showErrorPage("Could not load players metadata!");
         return false;
     }
 
@@ -118,5 +128,9 @@ void Kiosk::disableAdminMode() {
     }
 
     if (!display.beep(100)) { Debug.println("Could not beep"); }
+}
+
+PlayerMetadata Kiosk::getPlayerMetadata(const u8 userId) const {
+    return playersMetadata->getPlayerMetadata(userId);
 }
 

@@ -21,8 +21,13 @@ public:
 
     [[nodiscard]] PlayerData getLastPlayerData() const { return lastPlayerData; }
 
+   [[nodiscard]] PlayerMetadata getPlayerMetadata(u8 userId) const;
+
     PortalFramework framework;
     DwinDisplay display;
+
+    SkillsList* skillsList;
+    PlayersMetadata* playersMetadata;
 private:
     void handleConnectedTag(PlayerData playerData);
 

@@ -58,7 +58,7 @@ public:
 
         playerData = kiosk->getLastPlayerData();
 
-        if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name)) {
+        if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->getPlayerMetadata(playerData.user_id).name)) {
             Debug.println("Could not set display value!");
             return false;
         }

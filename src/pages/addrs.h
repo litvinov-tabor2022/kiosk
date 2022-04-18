@@ -59,7 +59,8 @@ public:
             static const u16 PrevButton = 0x1011;
             static const u16 NextButton = 0x1012;
 
-            static const u16 SkillBase = 0x1100;
+            static const u16 VpAddrBase = 0x1100;
+            static const u16 SpAddrBase = 0x2100;
             // other skill addrs for texts are derived: Base + row * 0x0100 + col * 0x0030
         } s;
     } u;

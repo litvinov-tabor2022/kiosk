@@ -123,19 +123,17 @@ private:
     }
 
     bool addBonusPoint() {
-        auto pdata = kiosk->getLastPlayerData();
-        pdata.bonus_points++;
-
+        playerData.bonus_points++;
         //TODO create transaction
 
-        return kiosk->framework.writePlayerData(pdata);
+        return kiosk->framework.writePlayerData(playerData);
     }
 
     bool showPlayerData(bool show) {
         if (show) {
             Debug.println("Showing user's data");
 
-            if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->framework.resources.getPlayerMetadata(playerData.user_id).name)) {
+            if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->getPlayerMetadata(playerData.user_id).name)) {
                 Debug.println("Could not set display value!");
                 return false;
             }
