@@ -49,7 +49,7 @@ public:
     }
 
     bool beforeLoad() override {
-        if (!kiosk->framework.isTagConnected()) {
+        if (!framework->isTagConnected()) {
             Debug.println("Tag disconnected, returning to admin main page");
             switchPage(Page_Admin_Main);
             return true;
@@ -111,7 +111,7 @@ private:
         if (playerHasSkill(skill.skill)) {
             Debug.printf("Removing skill: %s, ID %d\n", skill.name.c_str(), skill.skill);
             PlayerDataUtils::removeSkill(skill.skill, &playerData);
-            if (!kiosk->framework.writePlayerData(playerData)) {
+            if (!framework->writePlayerData(playerData)) {
                 Debug.println("Could not write data to tag!");
                 if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                 return;
@@ -119,7 +119,7 @@ private:
         } else {
             Debug.printf("Adding skill: %s, ID %d\n", skill.name.c_str(), skill.skill);
             PlayerDataUtils::addSkill(skill.skill, &playerData);
-            if (!kiosk->framework.writePlayerData(playerData)) {
+            if (!framework->writePlayerData(playerData)) {
                 Debug.println("Could not write data to tag!");
                 if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                 return;

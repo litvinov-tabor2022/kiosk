@@ -255,6 +255,7 @@ bool DwinDisplay::reset() {
 
 bool DwinDisplay::beep(const u16 millis) {
     return true;
+    // TODO use ;-)
 //    std::lock_guard<std::mutex> lg(opMutex);
 //
 //    memcpy(outBuff, Header, 2);

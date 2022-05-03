@@ -13,6 +13,7 @@ public:
             static const u16 InitAdmin = 0x1101;
             static const u16 AddBonusPoint = 0x1102;
             static const u16 Skills = 0x1104;
+            static const u16 ServiceMode = 0x1105;
             static const u16 Exit = 0x1103;
 
             static const u16 Strength = 0x1000;

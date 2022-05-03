@@ -14,26 +14,39 @@ public:
             DisplayPage(kiosk, std::move(switchPage)) {};
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
-        //TODO create transaction
+        Transaction transaction = Transaction{
+                .time = framework->clocks.getCurrentTime(),
+                .device_id = framework->getDeviceConfig().deviceId,
+                .user_id = (u16) playerData.user_id,
+                .bonus_points = -1
+        };
 
         switch (addr) {
             case PageAddrs::IncStrength:
                 playerData.strength++;
                 playerData.bonus_points--;
+                transaction.strength = 1;
                 break;
             case PageAddrs::IncDexterity:
                 playerData.dexterity++;
                 playerData.bonus_points--;
+                transaction.dexterity = 1;
                 break;
             case PageAddrs::IncMagic:
                 playerData.magic++;
                 playerData.bonus_points--;
+                transaction.magic = 1;
                 break;
         }
 
-        if (!kiosk->framework.writePlayerData(playerData)) {
+        if (!framework->writePlayerData(playerData)) {
             Debug.println("Could not update data on tag!");
             // TODO recover 😱
+            return;
+        }
+
+        if (!framework->storage.appendTransaction(transaction)) {
+            Debug.println("Could not log transaction!");
             return;
         }
 
