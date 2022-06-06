@@ -42,7 +42,7 @@ height = 30;
 display_height_total = display_size_bottom.z + display_size_board.z + display_size_mid.z + display_size_top.z;
 
 box_x = 2 + display_size_board.x + 2 * inset + sd_conn_size.x * 2;
-box_y = display_size_board.y + 2 * inset + pcb_size.y;
+box_y = 0.7 + display_size_board.y + 2 * inset + pcb_size.y;
 box_z = 30;
 
 box_inner = [box_x, box_y, box_z];
@@ -67,6 +67,7 @@ module Pcb() {
 module Display() {
     translate([(display_size_board.x - display_size_bottom.x) / 2, (display_size_board.y - display_size_bottom.y) / 2])
         color("black") cube(display_size_bottom);
+
     translate([0, 0, display_size_bottom.z]) {
         difference() {
             color("green") cube(display_size_board);
@@ -97,7 +98,7 @@ module Display() {
 }
 
 module BatteryHolder() {
-    translate([11.45, 11.4]) {
+    translate([11.45, 69.25]) rotate([0, 0, - 90]) {
         flexbatter(n = 6, l = 67, d = 18.4, hf = 0.75, shd = 3, eps = 0.28);
     }
 }
@@ -110,13 +111,25 @@ union() {
         cube(box);
         translate([fatness, fatness, fatness]) cube([box_inner.x, box_inner.y, 100]);
 
-        // front wall
-        translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]);
+        // DEBUG
+        translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // front wall
+
+        translate([fatness, fatness, fatness]) {
+            // charger hole
+            translate([- fatness - .01, 85.2, .2]) {
+                cube([fatness + .02, 11, 5]);
+            }
+
+            // switch
+            translate([- fatness - .01, 70, 8]) {
+                rotate([0, 90])cylinder(d = switch_hole_dia(), h = fatness + .02, $fn = 30);
+            }
+        }
     }
 
     translate([fatness, fatness, fatness - .01]) {
         display_z = box_inner.z - (display_height_total - display_size_top.z);
-        translate([(box_inner.x - display_size_board.x) / 2, inset + pcb_size.y]) {
+        translate([(box_inner.x - display_size_board.x) / 2, - inset + box_inner.y - display_size_board.y]) {
             if (DEBUG) translate([0, 0, display_z]) Display();
 
             // display supports
@@ -139,13 +152,46 @@ union() {
         }
 
         // MFRC
-        translate([(box.x - MFRC_board_size().x) / 2, 0, 0]) {
-            if (DEBUG) translate([0, MFRC_board_size().y, box_inner.z]) rotate([180]) MFRC_board();
+        translate([(box.x - MFRC_board_size().x) / 2 - 1, - 1, - .01]) {
+            if (DEBUG) translate([1 + inset, MFRC_board_size().y + 1 + inset, box_inner.z + .01]) rotate([180]) MFRC_board();
+
+            difference() {
+                outter = [MFRC_board_size().x + 2 * inset + 2, MFRC_board_size().y + 2 * inset + 2, box_inner.z];
+                cube(outter);
+                translate([1, 1]) cube([MFRC_board_size().x + 2 * inset, MFRC_board_size().y + 2 * inset, 100]);
+
+                translate([- .01, 18, 22]) cube([2, 15, 100]);
+                translate([- .01, 5]) cube([100, outter.y - 2 * 5, 15]);
+                translate([- .01, 5]) cube([100, outter.y - 2 * 5, 15]);
+
+                // debug:
+                //                translate([1, -1]) cube([MFRC_board_size().x + 2 * inset, 100, 100]);
+            }
+
+            //supports
+            translate([1, 1]) {
+                translate([18, 5]) difference() {
+                    outter = [MFRC_board_size().x - 2 * 18, MFRC_board_size().y - 2 * 5, box_inner.z - MFRC_board_size().z - inset];
+                    cube(outter);
+                    translate([1.5, 1.5]) cube([outter.x - 2 * 1.5, outter.y - 2 * 1.5, 100]);
+
+                }
+            }
         }
 
         // battery holder
-        translate([70, 10, - 1]) {
+        translate([48.5, 45, - 1]) {
             BatteryHolder();
+        }
+
+        // switch
+        translate([15.5, 70, 8]) {
+            if (DEBUG) rotate([0, - 90]) Switch(fatness + inset);
+        }
+
+        // charger
+        translate([inset, 82, 0]) {
+            if (DEBUG)  translate([28, 0, 1]) rotate([90, 180, - 90]) Charger();
         }
     }
 }
