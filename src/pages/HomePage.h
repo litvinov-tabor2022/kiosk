@@ -24,6 +24,7 @@ public:
             Core0.once("dim", [this] {
                 Tasker::sleep(2000);
                 if (shouldDim) {
+                    shouldDim = false;
                     if (!kiosk->display.setBrightness(0)) {
                         Debug.println("Could not set brightness");
                     }
