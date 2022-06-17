@@ -181,7 +181,7 @@ private:
         playerData.bonus_points++;
 
         const Transaction transaction = Transaction{
-                .time = framework->clocks.getCurrentTime(),
+                .time = framework->getCurrentTime(),
                 .device_id = framework->getDeviceConfig().deviceId,
                 .user_id = (u16) playerData.user_id,
                 .bonus_points = 1
@@ -194,7 +194,7 @@ private:
         if (!checkUserTagPresent("adjust user's data")) return false;
 
         Transaction transaction = Transaction{
-                .time = framework->clocks.getCurrentTime(),
+                .time = framework->getCurrentTime(),
                 .device_id = framework->getDeviceConfig().deviceId,
                 .user_id = (u16) playerData.user_id,
         };

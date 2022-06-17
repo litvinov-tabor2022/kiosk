@@ -56,7 +56,8 @@ bool Kiosk::begin() {
         return false;
     }
 
-    framework.addOnConnectCallback([this](PlayerData playerData) {
+    framework.addOnConnectCallback([this](PlayerData playerData, const bool isReload) {
+        // ignore the `isReload`, the code here counts with both options
         Debug.printf("Connected player: ID %d, strength %d\n", playerData.user_id, playerData.strength);
         handleConnectedTag(playerData);
     });

@@ -15,7 +15,7 @@ public:
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         Transaction transaction = Transaction{
-                .time = framework->clocks.getCurrentTime(),
+                .time = framework->getCurrentTime(),
                 .device_id = framework->getDeviceConfig().deviceId,
                 .user_id = (u16) playerData.user_id,
                 .bonus_points = -1
