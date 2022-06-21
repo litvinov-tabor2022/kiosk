@@ -5,14 +5,14 @@
 #include "HwLocks.h"
 #include <vector>
 #include <mutex>
+#include <list>
+#include <tuple>
 
 struct Color;
 
 class DwinDisplay {
 public:
     bool begin(const std::function<void(u16 addr, u8 *dataDest, u8 dataLen)> &asyncDataCallback);
-
-    bool readVar(u16 addr, u8 *dest, u8 len);
 
     bool writeIntVar(u16 addr, u16 value);
 
@@ -34,18 +34,26 @@ public:
 
 
 private:
-    void sendAndWaitForResponse();
+    bool sendAndWaitForResponse(const std::function<bool(u8 *buff, u8 size)> &acceptPredicate);
 
-    u8 readAsyncData(u16 *addr, u8 *dest);
+    bool readRawData();
 
-    HardwareSerial hwSerial = HardwareSerial(2);
-    std::mutex opMutex;
-
-    u8 asyncDataBuffer[255]{};
+    void readData();
 
     bool checkConnectivity();
 
     u16 toHighColor(u8 r, u8 g, u8 b);
+
+    u8 handleAsyncData(u16 *addr, u8 *dest) const;
+
+    HardwareSerial hwSerial = HardwareSerial(2);
+    std::mutex opMutex;
+    std::mutex waitingMutex;
+    std::function<void(u16 addr, u8 *dataDest, u8 dataLen)> asyncDataCallback;
+
+    std::list<std::tuple<std::function<bool(u8 *, u8)>, u64, std::function<void(bool)>>> waitingForResponse;
+
+    u8 asyncDataBuffer[255]{};
 };
 
 struct Color {

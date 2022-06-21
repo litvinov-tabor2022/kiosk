@@ -1,9 +1,11 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <msd/channel.hpp>
 
 #include "DwinDisplay.h"
 #include "Tasker.h"
+#include "debugging.h"
 
 #define DWIN_DEBUG false
 
@@ -44,52 +46,52 @@ void dumpOutBuff() {
 bool DwinDisplay::begin(const std::function<void(u16 addr, u8 *dataDest, u8 dataLen)> &asyncDataCallback) {
     hwSerial.begin(115200, SERIAL_8N1, RX2, TX2);
 
-    setPage(1);
-
     if (!hwSerial.availableForWrite() || !checkConnectivity()) {
         Serial.println("Could not communicate with the display!");
         return false;
     }
 
-    // regular check for async data
-    Core0.loopEvery("asyncDataCheck", 50, [this, asyncDataCallback] {
-        u16 asyncDataAddr;
-        u8 asyncDataLen;
+    this->asyncDataCallback = asyncDataCallback;
 
-        if ((asyncDataLen = readAsyncData(&asyncDataAddr, asyncDataBuffer)) > 0) {
-            asyncDataCallback(asyncDataAddr, asyncDataBuffer, asyncDataLen
-            );
+    // regular check for async data & timeouts
+    Core0.loopEvery("displayDataCheck", 50, [this] {
+        readData();
+
+        std::lock_guard<std::mutex> lg(waitingMutex);
+        if (!waitingForResponse.empty()) {
+            const u64 now = millis();
+            auto head = *waitingForResponse.cbegin();
+
+            if (now - std::get<1>(head) > 150) {
+                Debug.println("DWIN: Op timeout!");
+                std::get<2>(head)(false);
+                waitingForResponse.pop_front(); // just throw away
+            }
         }
     });
 
-    return true;
+    return setPage(1);
 }
 
 bool DwinDisplay::checkConnectivity() {
-    u16 asyncDataAddr;
-    u8 asyncDataLen;
-
     Serial.println("Checking display connectivity...");
 
     // check it works... this reads current display brightness which we give no shit about, but it proves the communication works ;-)
     const u8 buffer[7] = {0x5A, 0xA5, 0x04, 0x83, 0x00, 0x31, 0x01};
-    {
-        std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
-        for (u8 i: buffer) {
-            hwSerial.write(i);
-        }
-
-        if (DWIN_DEBUG) Serial.println("DWIN: Check data sent, waiting for response");
-
-        const u64 now = millis();
-        while (!hwSerial.available() && (millis() - now) < 500) {} // wait up to 500ms for the data
+    for (u8 i: buffer) {
+        hwSerial.write(i);
     }
+
+    if (DWIN_DEBUG) Serial.println("DWIN: Check data sent, waiting for response");
+
+    const u64 now = millis();
+    while (!hwSerial.available() && (millis() - now) < 500) {} // wait up to 500ms for the data
 
     if (DWIN_DEBUG) Serial.println("DWIN: Ready");
 
-    if ((asyncDataLen = readAsyncData(&asyncDataAddr, asyncDataBuffer)) > 0) {
+    if (readRawData()) {
         if (memcmp(ExpectedCheckResponse, inBuff, 4) != 0) {
-            Serial.printf("DWIN: Invalid data returned (%d B), comm not working!\n", asyncDataLen);
+            Serial.printf("DWIN: Invalid data returned (%d B), comm not working!\n", inBuffSize);
             return false;
         }
     } else {
@@ -98,41 +100,6 @@ bool DwinDisplay::checkConnectivity() {
     }
 
     return true;
-}
-
-bool DwinDisplay::readVar(u16 addr, u8 *dest, u8 len) {
-    std::lock_guard<std::mutex> lg(opMutex);
-
-    u8 bAdrL, bAdrH;
-    bAdrL = addr & 0xFF;
-    bAdrH = (addr >> 8) & 0xFF;
-
-    memcpy(outBuff, Header, 2);
-    outBuff[2] = 0x04;
-    outBuff[3] = ReadOp;
-    outBuff[4] = bAdrH;
-    outBuff[5] = bAdrL;
-    outBuff[6] = len;
-    outBuffSize = 7;
-
-    sendAndWaitForResponse();
-
-    /*
-     * Example:
-     *
-     * Sent:      5AA50483100001
-     * Received:        831000019999
-     * */
-
-    const u8 expLen = 4 + len * 2; // 4B = 1B op.confirm + 2B addr + 1B data length
-
-    if (inBuffSize == expLen && memcmp(&outBuff[3], inBuff, 4) == 0) {
-        // if ok, copy result into dest and quit
-        memcpy(dest, &inBuff[4], len * 2);  // data are stored in words
-        return true;
-    }
-
-    return false;
 }
 
 bool DwinDisplay::writeIntVar(u16 addr, u16 value) {
@@ -154,9 +121,7 @@ bool DwinDisplay::writeIntVar(u16 addr, u16 value) {
     outBuff[7] = bValL;
     outBuffSize = 8;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
 bool DwinDisplay::writeRawVar(u16 addr, const u8 *data, const u8 len) {
@@ -175,9 +140,7 @@ bool DwinDisplay::writeRawVar(u16 addr, const u8 *data, const u8 len) {
     memcpy(&outBuff[6], data, len);
     outBuffSize = 6 + len;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
 bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
@@ -209,16 +172,14 @@ bool DwinDisplay::writeTextVar(u16 addr, const std::string &text) {
 
     outBuff[2] = outBuffSize - 3; // 3 == header + op
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
 bool DwinDisplay::setTextDisplayColor(u16 spAddr, const Color color) {
     return writeIntVar(spAddr + TextColorSpOffset, toHighColor(color.r, color.g, color.b));
 }
 
-bool DwinDisplay::setPage(u8 no) {
+bool DwinDisplay::setPage(const u8 no) {
     std::lock_guard<std::mutex> lg(opMutex);
 
     memcpy(outBuff, Header, 2);
@@ -229,9 +190,7 @@ bool DwinDisplay::setPage(u8 no) {
     outBuff[9] = no & 0XFF;
     outBuffSize = 10;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
 bool DwinDisplay::reset() {
@@ -248,9 +207,8 @@ bool DwinDisplay::reset() {
     outBuff[9] = 0xA5;
     outBuffSize = 10;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0) && checkConnectivity();
+    return sendAndWaitForResponse(
+            [this](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0) && checkConnectivity(); });
 }
 
 bool DwinDisplay::beep(const u16 millis) {
@@ -267,14 +225,10 @@ bool DwinDisplay::beep(const u16 millis) {
 //    outBuff[7] = millis / 8;
 //    outBuffSize = 8;
 //
-//    sendAndWaitForResponse();
-//
-//    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+//    return sendAndWaitForResponse([] { return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0); });
 }
 
 bool DwinDisplay::setBrightness(u8 level) {
-    std::lock_guard<std::mutex> lg(opMutex);
-
     level = map(level, 0, 255, 0, 0x64);
 
     memcpy(outBuff, Header, 2);
@@ -286,9 +240,7 @@ bool DwinDisplay::setBrightness(u8 level) {
     outBuff[7] = level;
     outBuffSize = 8;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
 bool DwinDisplay::disableBeeping() {
@@ -305,57 +257,35 @@ bool DwinDisplay::disableBeeping() {
     outBuff[9] = 0x30;
     outBuffSize = 10;
 
-    sendAndWaitForResponse();
-
-    return (inBuffSize == 3 && memcmp(SuccessfulWrite, inBuff, 3) == 0);
+    return sendAndWaitForResponse([](u8 *buff, u8 size) { return (size == 3 && memcmp(SuccessfulWrite, buff, 3) == 0); });
 }
 
-void DwinDisplay::sendAndWaitForResponse() {
-    std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
+bool DwinDisplay::sendAndWaitForResponse(const std::function<bool(u8 *buff, u8 size)> &acceptPredicate) {
+    msd::channel<bool> result;
 
-    if (DWIN_DEBUG) {
-        Serial.printf("DWIN: Raw data sent (%d B): 0x", outBuffSize);
-        dumpOutBuff();
-        Serial.println();
-    }
-
-    hwSerial.write(outBuff, outBuffSize);
-
-    // TODO implement timeout
-    // TODO check for async data :-|
-
-    inBuffSize = 0;
-    u8 i = 0;
-    while (hwSerial.available() < 3) {} // wait until header arrives
-
-    if (hwSerial.read() == 0x5A && hwSerial.read() == 0xA5) {
-        const u8 iLen = hwSerial.read();
-
-        while (hwSerial.available() < iLen); //Wait for the whole frame
-
-        while (i < iLen) {  //Compile all frame
-            inBuff[i] = hwSerial.read();
-            inBuffSize++;
-            i++;
-        }
+    {
+        std::lock_guard<std::mutex> lg(waitingMutex);
 
         if (DWIN_DEBUG) {
-            Serial.printf("DWIN: Raw data received (%d B): 0x", inBuffSize);
-            dumpInBuff();
+            Serial.printf("DWIN: Raw data sent (%d B): 0x", outBuffSize);
+            dumpOutBuff();
             Serial.println();
         }
 
-        return;
+        waitingForResponse.emplace_back(acceptPredicate, millis(), [&result](bool wasOk) {
+            wasOk >> result;
+        });
+
+        hwSerial.write(outBuff, outBuffSize);
     }
 
-    // fuck, invalid frame header!!
-    Serial.println("DWIN: Invalid data received!!");
+
+    bool resultOk;
+    resultOk << result;
+    return resultOk;
 }
 
-u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
-    std::lock_guard<std::mutex> lg(opMutex);
-    std::lock_guard<std::mutex> lg_(HwLocks::DWIN_SERIAL);
-
+bool DwinDisplay::readRawData() {
     if (hwSerial.available()) {
         inBuffSize = 0;
         u8 i = 0;
@@ -366,7 +296,6 @@ u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
 
             const u8 iLen = hwSerial.read();
 
-
             while (hwSerial.available() < iLen); //Wait for the whole frame
 
             while (i < iLen) {  //Compile all frame
@@ -375,25 +304,63 @@ u8 DwinDisplay::readAsyncData(u16 *addr, u8 *dest) {
                 i++;
             }
 
-            if (DWIN_DEBUG) {
-                Serial.print("DWIN: Raw data received (async): 0x");
-                dumpInBuff();
-                Serial.println();
-            }
 
-            *addr = (inBuff[1] << 8) + inBuff[2];
-            const u8 realLen = inBuff[3] * 2; // data are stored in words
-
-            memcpy(dest, &inBuff[4], realLen);
-
-            return realLen;
+            return true;
         }
 
         // fuck, invalid frame header!!
         Serial.println("DWIN: Invalid data received!!");
     }
 
-    return 0;
+    return false;
+}
+
+void DwinDisplay::readData() {
+    if (readRawData()) {
+
+        {
+            std::lock_guard<std::mutex> lg(waitingMutex);
+
+            if (!waitingForResponse.empty()) {
+                if (DWIN_DEBUG) {
+                    Serial.print("DWIN: Raw data received: 0x");
+                    dumpInBuff();
+                    Serial.println();
+                }
+
+                auto head = *waitingForResponse.cbegin();
+
+                // does the _head_ accept the data?
+                if (std::get<0>(head)(inBuff, inBuffSize)) {
+                    std::get<2>(head)(true);
+                    waitingForResponse.pop_front(); // just throw it away
+                    return;
+                }
+            }
+        }
+
+        u16 asyncDataAddr;
+        const u8 asyncDataLen = handleAsyncData(&asyncDataAddr, asyncDataBuffer);
+
+        if (DWIN_DEBUG) {
+            Serial.print("DWIN: Raw data received (async): 0x");
+            dumpInBuff();
+            Serial.println();
+        }
+
+        Core0.once("asyncDataCallback", [this, asyncDataAddr, asyncDataLen] {
+            asyncDataCallback(asyncDataAddr, asyncDataBuffer, asyncDataLen);
+        });
+    }
+}
+
+u8 DwinDisplay::handleAsyncData(u16 *addr, u8 *dest) const {
+    *addr = (inBuff[1] << 8) + inBuff[2];
+    const u8 realLen = inBuff[3] * 2; // data are stored in words
+
+    memcpy(dest, &inBuff[4], realLen);
+
+    return realLen;
 }
 
 u16 DwinDisplay::toHighColor(const u8 r, const u8 g, const u8 b) {

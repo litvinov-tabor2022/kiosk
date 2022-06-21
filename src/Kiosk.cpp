@@ -69,7 +69,9 @@ bool Kiosk::begin() {
 
 void Kiosk::handleConnectedTag(PlayerData playerData) {
     if (!display.beep(100)) { Debug.println("Could not beep"); }
-    display.setBrightness(255);
+    if (!display.setBrightness(255)) {
+        Debug.println("Could not set brightness!");
+    }
 
     if (playerData.user_id == ADMIN_USER_ID) {
         adminTagPresent = true;
