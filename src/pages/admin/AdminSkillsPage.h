@@ -83,13 +83,23 @@ public:
 private:
     bool displaySkillsPage() {
         const auto it = kiosk->skillsList->getSkillsPageStart(pageNo, SKILLS_PAGE_SIZE);
+        const u8 count = kiosk->skillsList->getLength();
 
         for (u8 row = 0; row < SKILLS_PAGE_ROWS; row++)
             for (u8 col = 0; col < SKILLS_PAGE_COLS; col++) {
                 const u16 vpAddr = PageAddrs::VpAddrBase + row * 0x0100 + col * 0x0030;
                 const u16 spAddr = PageAddrs::SpAddrBase + row * 0x0100 + col * 0x0030;
 
-                const auto elem = it + row * SKILLS_PAGE_COLS + col;
+                const u8 offset = row * SKILLS_PAGE_COLS + col;
+
+                if (offset >= count) {
+                    // for cases there's not enough skills to fill a single page...
+                    // we need to empty all the unused fields then
+                    if (!kiosk->display.writeTextVar(vpAddr, "")) return false;
+                    continue;
+                }
+
+                const auto elem = it + offset;
 
                 if (!kiosk->display.writeTextVar(vpAddr, elem->name)) return false;
 

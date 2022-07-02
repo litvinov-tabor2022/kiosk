@@ -47,15 +47,24 @@ public:
     bool beforeLoad() override {
         Debug.printf("Loading skills page, page %d\n", pageNo);
 
-        // this is not changed so it doesn't have to be reloaded every time, but it can't be loaded in ctor
-        maxPageNo = kiosk->skillsList->getLength() / SKILLS_PAGE_SIZE;
-
         playerData = kiosk->getLastPlayerData();
 
         if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->getPlayerMetadata(playerData.user_id).name)) {
             Debug.println("Could not set display value!");
             return false;
         }
+
+        const auto it = kiosk->skillsList->getAll();
+
+        std::vector<SkillsListEntry> skillsList;
+
+        for (u8 i = 0; i < kiosk->skillsList->getLength(); i++) {
+            const auto elem = it + i;
+            if (playerHasSkill(elem->skill)) skillsList.push_back(*elem);
+        }
+
+        ownedSkillsList = new SkillsList(skillsList);
+        maxPageNo = ownedSkillsList->getLength() / SKILLS_PAGE_SIZE;
 
         if (!displaySkillsPage()) {
             Debug.println("Could not display skills!");
@@ -67,25 +76,37 @@ public:
 
     bool beforeUnload() override {
         Debug.println("Unloading skills page");
+        free(ownedSkillsList);
         return true;
     }
 
 private:
     bool displaySkillsPage() {
-        const auto it = kiosk->skillsList->getSkillsPageStart(pageNo, SKILLS_PAGE_SIZE);
+        const auto it = ownedSkillsList->getSkillsPageStart(pageNo, SKILLS_PAGE_SIZE);
+        const u8 count = ownedSkillsList->getLength();
+
+        Debug.printf("Showing %d/%d user's skills\n", SKILLS_PAGE_SIZE, count);
 
         for (u8 row = 0; row < SKILLS_PAGE_ROWS; row++)
             for (u8 col = 0; col < SKILLS_PAGE_COLS; col++) {
                 const u16 vpAddr = PageAddrs::VpAddrBase + row * 0x0100 + col * 0x0030;
                 const u16 spAddr = PageAddrs::SpAddrBase + row * 0x0100 + col * 0x0030;
 
-                const auto elem = it + row * SKILLS_PAGE_COLS + col;
+                const u8 offset = row * SKILLS_PAGE_COLS + col;
+
+                if (offset >= count) {
+                    // for cases there's not enough skills to fill a single page...
+                    // we need to empty all the unused fields then
+                    if (!kiosk->display.writeTextVar(vpAddr, "")) return false;
+                    continue;
+                }
+
+                const auto elem = it + offset;
+
+                Serial.printf("Showing skill: %s \n", elem->name.c_str());
 
                 if (!kiosk->display.writeTextVar(vpAddr, elem->name)) return false;
-
-                // color: can the player have this?
-                const auto color = playerHasSkill(elem->skill) ? Colors::LightGreen : (playerCanHave(*elem) ? Colors::Black : Colors::Red);
-                if (!kiosk->display.setTextDisplayColor(spAddr, color)) return false;
+                if (!kiosk->display.setTextDisplayColor(spAddr, Colors::Black)) return false;
             }
 
         return true;
@@ -95,10 +116,7 @@ private:
         return PlayerDataUtils::hasSkill(id, playerData);
     }
 
-    [[nodiscard]] bool playerCanHave(const SkillsListEntry &skill) const {
-        return PlayerDataUtils::canHaveSkill(skill, playerData);
-    }
-
+    SkillsList *ownedSkillsList;
     PlayerData playerData;
     u8 maxPageNo;
     i8 pageNo = 0; // yes, i8... it's more convenient for handling the overflow
