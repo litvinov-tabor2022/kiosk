@@ -1,0 +1,14 @@
+[INIT]
+PICFIX=1
+VARCount=64
+Version=-1
+SCREENDSIZE=800X480
+SPADDRESS=5000
+[IMG]
+3=3_admin.png
+4=4_home.png
+5=5_error.png
+6=6_admin_skills.png
+0=0_main.jpg
+1=1_bonus.jpg
+2=2_skills.jpg
