@@ -4,3 +4,5 @@ cmake-build-*/
 CMakeLists.txt
 .idea
 *.iml
+ui/32
+ui/TFT

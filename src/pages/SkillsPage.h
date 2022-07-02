@@ -9,8 +9,8 @@
 #include "Resources.h"
 #include "PlayerDataUtils.h"
 
-#define SKILLS_PAGE_COLS 3
-#define SKILLS_PAGE_ROWS 5
+#define SKILLS_PAGE_COLS 1
+#define SKILLS_PAGE_ROWS 4
 #define SKILLS_PAGE_SIZE (SKILLS_PAGE_ROWS * SKILLS_PAGE_COLS)
 
 
