@@ -12,14 +12,19 @@ public:
             static const u16 InitRandom = 0x1100;
             static const u16 InitAdmin = 0x1101;
             static const u16 AddBonusPoint = 0x1102;
+            static const u16 RemoveBonusPoint = 0x1106;
             static const u16 Skills = 0x1104;
-            static const u16 ServiceMode = 0x1105;
+            static const u16 ServiceModeToggle = 0x1105;
             static const u16 Exit = 0x1103;
+            static const u16 TagRecovery = 0x1107;
 
             static const u16 Strength = 0x1000;
             static const u16 Dexterity = 0x1001;
             static const u16 Magic = 0x1002;
             static const u16 Name = 0x1005;
+            static const u16 ServiceModeLabelVp = 0x1050;
+            static const u16 ServiceModeLabelSp = 0x2050;
+            static const u16 TagRecoveryName = 0x1008;
 
             static const u16 IncStrength = 0x1010;
             static const u16 IncDexterity = 0x1020;

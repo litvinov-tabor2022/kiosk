@@ -52,12 +52,29 @@ public:
                 break;
 
             case PageAddrs::AddBonusPoint:
-                if (!addBonusPoint()) {
+                if (!addBonusPoint(1)) {
                     Debug.println("Could not write the data!");
                     if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
                 if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+                break;
+
+            case PageAddrs::RemoveBonusPoint:
+                if (!addBonusPoint(-1)) {
+                    Debug.println("Could not write the data!");
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+                    return;
+                }
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+                break;
+
+            case PageAddrs::TagRecovery:
+                if (!recoverTag()) {
+                    Debug.println("Could not recover tag!");
+                    return;
+                }
+
                 break;
 
             case PageAddrs::Skills:
@@ -66,9 +83,17 @@ public:
                 switchPage(Page_Admin_Skills);
                 break;
 
-            case PageAddrs::ServiceMode:
+            case PageAddrs::ServiceModeToggle:
                 if (!framework->synchronizationMode.toggle()) {
                     Debug.println("Could not toggle synchronization mode!");
+                    return;
+                }
+
+                if (!kiosk->display.setTextDisplayColor(
+                        PageAddrs::ServiceModeLabelSp,
+                        framework->synchronizationMode.isStarted() ? Colors::Green : Colors::Red
+                )) {
+                    Debug.println("Could not set text color");
                     return;
                 }
 
@@ -89,6 +114,20 @@ public:
 
         Debug.printf("Loading admin main page, will%s show data\n", showData ? "" : " NOT");
         playerData = kiosk->getLastPlayerData();
+
+        if (!kiosk->display.writeTextVar(PageAddrs::ServiceModeLabelVp, "Serv. mode")) {
+            Debug.println("Could not set display value!");
+            return false;
+        }
+
+        if (playerData.user_id != ADMIN_USER_ID) {
+            const auto userName = kiosk->getPlayerMetadata(playerData.user_id).name;
+            Debug.printf("Able to recover tag of: %s (%d)\n", userName.c_str(), playerData.user_id);
+            if (!kiosk->display.writeTextVar(PageAddrs::TagRecoveryName, userName)) {
+                Debug.println("Could not set display value!");
+                return false;
+            }
+        }
 
         if (!showPlayerData(showData)) {
             Debug.println("Could not show player data!");
@@ -175,16 +214,16 @@ private:
         return true;
     }
 
-    bool addBonusPoint() {
-        if (!checkUserTagPresent("add user's bonus point")) return false;
+    bool addBonusPoint(i8 delta) {
+        if (!checkUserTagPresent("add/remove user's bonus point")) return false;
 
-        playerData.bonus_points++;
+        playerData.bonus_points += delta;
 
         const Transaction transaction = Transaction{
                 .time = framework->getCurrentTime(),
                 .device_id = framework->getDeviceConfig().deviceId,
                 .user_id = (u16) playerData.user_id,
-                .bonus_points = 1
+                .bonus_points = delta
         };
 
         return writeToTagAndCommit(transaction);
@@ -231,6 +270,15 @@ private:
         }
 
         return writeToTagAndCommit(transaction);
+    }
+
+    bool recoverTag() {
+        if (!checkUserTagPresent("recover tag")) return false;
+
+        const auto userName = kiosk->getPlayerMetadata(playerData.user_id).name;
+        Debug.printf("Recovering tag of: %s (%d)\n", userName.c_str(), playerData.user_id);
+
+        return framework->writePlayerData(playerData);
     }
 
     bool checkUserTagPresent(const String &desc) {
