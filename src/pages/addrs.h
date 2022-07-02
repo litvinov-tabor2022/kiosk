@@ -59,6 +59,7 @@ public:
             static const u16 Strength = 0x1000;
             static const u16 Dexterity = 0x1001;
             static const u16 Magic = 0x1002;
+            static const u16 Points = 0x1003;
             static const u16 Name = 0x1005;
 
             static const u16 IncStrength = 0x1100;

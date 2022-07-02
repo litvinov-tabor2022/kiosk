@@ -37,6 +37,10 @@ public:
                 playerData.bonus_points--;
                 transaction.magic = 1;
                 break;
+            default:
+                // this is a failsafe so the display doesn't generate invalid transactions
+                Debug.println("Invalid action!! WTF?!");
+                return;
         }
 
         if (!framework->writePlayerData(playerData)) {
@@ -59,6 +63,10 @@ public:
             return;
         }
         if (!kiosk->display.writeIntVar(PageAddrs::Magic, playerData.magic)) {
+            Debug.println("Could not set display value!");
+            return;
+        }
+        if (!kiosk->display.writeIntVar(PageAddrs::Points, playerData.bonus_points)) {
             Debug.println("Could not set display value!");
             return;
         }
