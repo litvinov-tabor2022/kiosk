@@ -49,11 +49,6 @@ public:
 
         playerData = kiosk->getLastPlayerData();
 
-        if (!kiosk->display.writeTextVar(PageAddrs::Name, kiosk->getPlayerMetadata(playerData.user_id).name)) {
-            Debug.println("Could not set display value!");
-            return false;
-        }
-
         const auto it = kiosk->skillsList->getAll();
 
         std::vector<SkillsListEntry> skillsList;

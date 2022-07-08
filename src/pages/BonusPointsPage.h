@@ -99,6 +99,11 @@ public:
             return false;
         }
 
+        if (!kiosk->display.writeIntVar(PageAddrs::Points, playerData.bonus_points)) {
+            Debug.println("Could not set display value!");
+            return false;
+        }
+
         return true;
     }
 

@@ -58,7 +58,8 @@ bool Kiosk::begin() {
 
     framework.addOnConnectCallback([this](PlayerData playerData, const bool isReload) {
         // ignore the `isReload`, the code here counts with both options
-        Debug.printf("Connected player: ID %d, strength %d\n", playerData.user_id, playerData.strength);
+        const auto userName = getPlayerMetadata(playerData.user_id).name;
+        Debug.printf("Connected player: %s (ID %d)\n", userName.c_str(), playerData.user_id);
         handleConnectedTag(playerData);
     });
 
@@ -69,9 +70,6 @@ bool Kiosk::begin() {
 
 void Kiosk::handleConnectedTag(PlayerData playerData) {
     if (!display.beep(100)) { Debug.println("Could not beep"); }
-    if (!display.setBrightness(255)) {
-        Debug.println("Could not set brightness!");
-    }
 
     if (playerData.user_id == ADMIN_USER_ID) {
         adminTagPresent = true;
@@ -83,10 +81,22 @@ void Kiosk::handleConnectedTag(PlayerData playerData) {
         if (this->adminMode) {
             if (!pagesManager->reloadPage()) {
                 Debug.println("Could not reload page");
+                if (!display.beep(1000)) { Debug.println("Could not beep"); }
+                return;
             }
         } else {
-            pagesManager->switchPage(playerData.bonus_points > 0 ? Page_BonusPoints : Page_UserMain);
+            const u8 bonusPoints = playerData.bonus_points;
+            Debug.printf("Player has %d bonus points\n", bonusPoints);
+            if (!pagesManager->switchPage(bonusPoints > 0 ? Page_BonusPoints : Page_UserMain)) {
+                Debug.println("Could not load page");
+                if (!display.beep(1000)) { Debug.println("Could not beep"); }
+                return;
+            }
         }
+    }
+
+    if (!display.setBrightness(255)) {
+        Debug.println("Could not set brightness!");
     }
 }
 

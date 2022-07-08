@@ -72,8 +72,11 @@ public:
             case PageAddrs::TagRecovery:
                 if (!recoverTag()) {
                     Debug.println("Could not recover tag!");
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
                     return;
                 }
+
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
 
                 break;
 
@@ -84,15 +87,28 @@ public:
                 break;
 
             case PageAddrs::ServiceModeToggle:
+                bool started;
+
                 if (!framework->synchronizationMode.toggle()) {
                     Debug.println("Could not toggle synchronization mode!");
-                    return;
+                    if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+
+                    started = framework->synchronizationMode.isStarted();
+
+                    // try to revert the toggle
+                    if (started) {
+                        framework->synchronizationMode.stop();
+                    } else {
+                        framework->synchronizationMode.start();
+                    }
+                } else {
+                    if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 }
 
-                if (!kiosk->display.setTextDisplayColor(
-                        PageAddrs::ServiceModeLabelSp,
-                        framework->synchronizationMode.isStarted() ? Colors::Green : Colors::Red
-                )) {
+                started = framework->synchronizationMode.isStarted();
+                Debug.printf("Sync mode started: %d\n", started);
+
+                if (!kiosk->display.setTextDisplayColor(PageAddrs::ServiceModeLabelSp, started ? Colors::Green : Colors::Red)) {
                     Debug.println("Could not set text color");
                     return;
                 }
@@ -117,6 +133,14 @@ public:
 
         if (!kiosk->display.writeTextVar(PageAddrs::ServiceModeLabelVp, "Serv. mode")) {
             Debug.println("Could not set display value!");
+            return false;
+        }
+
+        if (!kiosk->display.setTextDisplayColor(
+                PageAddrs::ServiceModeLabelSp,
+                framework->synchronizationMode.isStarted() ? Colors::Green : Colors::Red
+        )) {
+            Debug.println("Could not set text color");
             return false;
         }
 
@@ -189,6 +213,11 @@ private:
                 Debug.println("Could not set display value!");
                 return false;
             }
+
+            if (!kiosk->display.writeIntVar(PageAddrs::BonusPoints, playerData.bonus_points)) {
+                Debug.println("Could not set display value!");
+                return false;
+            }
         } else {
             if (!kiosk->display.writeTextVar(PageAddrs::Name, u8"-- none --")) {
                 Debug.println("Could not set display value!");
@@ -209,15 +238,23 @@ private:
                 Debug.println("Could not set display value!");
                 return false;
             }
+
+            if (!kiosk->display.writeIntVar(PageAddrs::BonusPoints, 0)) {
+                Debug.println("Could not set display value!");
+                return false;
+            }
         }
 
         return true;
     }
 
     bool addBonusPoint(i8 delta) {
+        Debug.printf("Adding bonus point: %d\n", delta);
+
         if (!checkUserTagPresent("add/remove user's bonus point")) return false;
 
-        playerData.bonus_points += delta;
+        PlayerData newData = playerData;
+        newData.bonus_points += delta;
 
         const Transaction transaction = Transaction{
                 .time = framework->getCurrentTime(),
@@ -226,7 +263,7 @@ private:
                 .bonus_points = delta
         };
 
-        return writeToTagAndCommit(transaction);
+        return writeToTagAndCommit(newData, transaction);
     }
 
     bool adjustPlayerData(const u16 addr) {
@@ -238,29 +275,31 @@ private:
                 .user_id = (u16) playerData.user_id,
         };
 
+        PlayerData newData = playerData;
+
         switch (addr) {
             case PageAddrs::IncStrength:
-                playerData.strength++;
+                newData.strength++;
                 transaction.strength = 1;
                 break;
             case PageAddrs::DecStrength:
-                playerData.strength--;
+                newData.strength--;
                 transaction.strength = -1;
                 break;
             case PageAddrs::IncDexterity:
-                playerData.dexterity++;
+                newData.dexterity++;
                 transaction.dexterity = 1;
                 break;
             case PageAddrs::DecDexterity:
-                playerData.dexterity--;
+                newData.dexterity--;
                 transaction.dexterity = -1;
                 break;
             case PageAddrs::IncMagic:
-                playerData.magic++;
+                newData.magic++;
                 transaction.magic = 1;
                 break;
             case PageAddrs::DecMagic:
-                playerData.magic--;
+                newData.magic--;
                 transaction.magic = -1;
                 break;
 
@@ -269,7 +308,7 @@ private:
                 return false;
         }
 
-        return writeToTagAndCommit(transaction);
+        return writeToTagAndCommit(newData, transaction);
     }
 
     bool recoverTag() {
@@ -297,8 +336,26 @@ private:
         return true;
     }
 
-    bool writeToTagAndCommit(const Transaction &transaction) {
-        if (!framework->writePlayerData(playerData)) {
+    bool writeToTagAndCommit(const PlayerData &newData, const Transaction &transaction) {
+        // I curse unsigned types in C++.
+        if (newData.strength < 0 || newData.strength > 200) {
+            Debug.println("Could not decrease strength under 0!");
+            return false;
+        }
+        if (newData.magic < 0 || newData.magic > 200) {
+            Debug.println("Could not decrease magic under 0!");
+            return false;
+        }
+        if (newData.dexterity < 0 || newData.dexterity > 200) {
+            Debug.println("Could not decrease dexterity under 0!");
+            return false;
+        }
+        if (newData.bonus_points < 0 || newData.bonus_points > 200) {
+            Debug.println("Could not decrease bonus points under 0!");
+            return false;
+        }
+
+        if (!framework->writePlayerData(newData)) {
             Debug.println("Could not write the data!");
             if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
             return false;
@@ -308,6 +365,8 @@ private:
             Debug.println("Could not log transaction!");
             return false;
         }
+
+        playerData = newData;
 
         if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
 

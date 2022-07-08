@@ -21,10 +21,11 @@ public:
             static const u16 Strength = 0x1000;
             static const u16 Dexterity = 0x1001;
             static const u16 Magic = 0x1002;
+            static const u16 BonusPoints = 0x1003;
             static const u16 Name = 0x1005;
             static const u16 ServiceModeLabelVp = 0x1050;
             static const u16 ServiceModeLabelSp = 0x2050;
-            static const u16 TagRecoveryName = 0x1008;
+            static const u16 TagRecoveryName = 0x1032;
 
             static const u16 IncStrength = 0x1010;
             static const u16 IncDexterity = 0x1020;
@@ -73,8 +74,6 @@ public:
         } bp;
 
         const struct Skills {
-            static const u16 Name = 0x1005;
-
             static const u16 BackButton = 0x1010;
             static const u16 PrevButton = 0x1011;
             static const u16 NextButton = 0x1012;
