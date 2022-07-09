@@ -30,7 +30,7 @@ onboard_sd_pos = [1, 66];
 sd_conn_size = [16, 22];
 sd_size = [38, 30, 3.9];
 sd_hold_x = 15;
-sd_hold_size = 6;
+sd_hold_size = [5.7, 4.5, 1];
 
 pcb_size = [60, 40, 1.6];
 rtc_size = [27, 28, 9.56];
@@ -42,6 +42,10 @@ batt_holder_size = [battery_dia + 2 * 1, 66 + 2 * 1, battery_dia + 1];
 esp32_size = ESP32_size();
 mfrc_shaft_size = Shaft_size_outter();
 charger_size = Charger_size();
+
+switch_y = 54.5;
+charger_y = 74.8;
+sdslot_y = 98;
 
 height = 30;
 
@@ -137,6 +141,14 @@ module BatteryHolder() {
     }
 }
 
+module SdSlot() {
+    color("black") union() {
+        cube(sd_size);
+        translate([sd_hold_x, sd_size.y - .01]) cube(sd_hold_size);
+        translate([sd_hold_x, - sd_hold_size.y + .01]) cube(sd_hold_size);
+    }
+}
+
 // -------------------------------------
 
 // main
@@ -155,17 +167,23 @@ module Main() {
             translate([fatness, fatness, fatness]) color("blue") cube([box_inner.x, box_inner.y, 100]);
 
             // DEBUG
-            translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // front wall
+            // translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // front wall
+            // translate([fatness, box_y + fatness - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // back wall
 
             translate([fatness, fatness, fatness]) {
                 // charger hole
-                translate([- fatness - .01, 85, .2]) {
+                translate([- fatness - .01, charger_y + 3, .2]) {
                     cube([fatness + .02, 11, 5]);
                 }
 
                 // switch
-                translate([- fatness - .01, 70, 8]) {
+                translate([- fatness - .01, switch_y + 10, 8]) {
                     rotate([0, 90])cylinder(d = switch_head_dia() + 1, h = fatness + .02, $fn = 30);
+                }
+
+                // SD slot
+                translate([- fatness - .01, sdslot_y, 0]) {
+                    cube([fatness + .02, sd_size.y, sd_size.z]);
                 }
             }
         }
@@ -174,9 +192,20 @@ module Main() {
             translate([(box_inner.x - display_size_board.x) / 2, - inset + box_inner.y - display_size_board.y]) {
                 if (DEBUG) translate([0, 0, display_z]) Display();
 
-                // display supports
+                /* top left     */
+                union() {
+                    difference() {
+                        DispSupport(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y);
+                        translate([display_hole_pos[0].x - 10, display_size_board.y - display_hole_pos[0].y - 10]) cube([20, 20, 5 - .01]);
+                    }
 
-                /* top left     */ DispSupport(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y);
+                    translate([display_hole_pos[0].x - 9, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
+                        color("orange") cube([14, 10, 5]);
+                        translate([2, - .01]) color("blue") cube([sd_hold_size.x, sd_hold_size.y, 4.5]);
+                    }
+                }
+
+
                 /* bottom left  */ DispSupport(display_hole_pos[1].x, display_hole_pos[1].y);
                 /* top right    */ DispSupport(display_size_board.x - display_hole_pos[2].x, display_size_board.y - display_hole_pos[2].y);
                 /* bottom right */ DispSupport(display_size_board.x - display_hole_pos[3].x, display_hole_pos[3].y);
@@ -232,8 +261,8 @@ module Main() {
             }
 
             // switch
-            translate([- .01, 60, - .01]) {
-                size = [5.5, 21, 18];
+            translate([- .01, switch_y, - .01]) {
+                size = [5.5, 20, 18];
                 difference() {
                     cube(size);
                     color("red") translate([- .01, fatness]) cube([10, size.y - 2 * fatness, size.z - 1]);
@@ -241,15 +270,15 @@ module Main() {
                 translate([size.x - .01, 0]) difference() {
                     color("red") cube([fatness, size.y, size.z]);
                     // the positioning here is... wild :-|
-                    translate([- .01, size.y / 2 - .5, 8.05]) rotate([0, 90])
+                    translate([- .01, size.y / 2, 8.05]) rotate([0, 90])
                         cylinder(d = switch_hole_dia(), h = fatness + .02, $fn = 30);
                 }
 
-                if (DEBUG) translate([23, size.y / 2 - .5, 8]) rotate([0, - 90]) Switch(fatness + inset);
+                if (DEBUG) translate([23, size.y / 2, 8]) rotate([0, - 90]) Switch(fatness + inset);
             }
 
             // charger
-            translate([inset, 82, 0]) {
+            translate([inset, charger_y]) {
                 translate([- inset - .01, - 1 - inset]) {
                     size = [5, charger_size.x + 2 * (1 + inset), 6];
                     difference() {
@@ -264,6 +293,20 @@ module Main() {
                 }
 
                 if (DEBUG)  translate([28, - inset / 2, 1]) rotate([90, 180, - 90]) Charger();
+            }
+
+            // SD slot
+            translate([.01, sdslot_y]) union() {
+                translate([0, - 1 - inset]) difference() {
+                    size = [sd_size.x + 1 + inset, sd_size.y + 2 * (1 + inset), 5];
+                    cube(size);
+                    translate([- .01, 1]) cube([sd_size.x + inset, sd_size.y + 2 * inset, 100]);
+                    translate([0, 4]) cube([100, size.y - 8, 100]);
+
+                    translate([sd_hold_x, - .01]) cube([sd_hold_size.x, 100, 100]);
+                }
+
+                if (DEBUG) SdSlot();
             }
         }
     }
