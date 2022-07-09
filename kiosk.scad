@@ -5,8 +5,8 @@ use <../modely/flexbatter.scad>
 use <../modely/buttons.scad>
 use <../modely/mfrc.scad>
 
-DEBUG = true;
-//DEBUG = false;
+//DEBUG = true;
+DEBUG = false;
 
 fatness = 2;
 inset = .2;
@@ -228,17 +228,19 @@ module Main() {
             }
 
             // MFRC
-            translate([(box.x - MFRC_board_size().x) / 2 - 1, - 1, - .01]) {
-                if (DEBUG) translate([1 + inset / 2, MFRC_board_size().y + 1 + inset / 2, box_inner.z + .01]) rotate([180]) MFRC_board();
+            translate([73, - 1.5, - .01]) {
+                f = 1.5;
+
+                if (DEBUG) translate([f + inset / 2, MFRC_board_size().y + f + inset / 2, box_inner.z + .01]) rotate([180]) MFRC_board();
 
                 difference() {
-                    outter = [MFRC_board_size().x + inset + 2, MFRC_board_size().y + inset + 2, box_inner.z];
+                    outter = [MFRC_board_size().x + inset + 2 * f, MFRC_board_size().y + inset + 2 * f, box_inner.z];
                     cube(outter);
-                    translate([1, 1]) cube([MFRC_board_size().x + inset, MFRC_board_size().y + inset, 100]);
+                    translate([f, f]) cube([MFRC_board_size().x + inset, MFRC_board_size().y + inset, 100]);
 
                     translate([- .01, 18, 22]) cube([2, 15, 100]);
-                    translate([- .01, 5]) cube([100, outter.y - 2 * 5, 15]);
-                    translate([10, - .01]) cube([outter.x - 20, 100, 20]);
+                    translate([- .01, 4]) cube([100, outter.y - 2 * 4, 18]);
+                    translate([10, - .01]) cube([outter.x - 20, 100, 25]);
 
                     // debug MRFC stand:
                     // translate([1, -1]) cube([MFRC_board_size().x + 2 * inset, 100, 100]);
@@ -251,6 +253,8 @@ module Main() {
                         cube(outter);
                         translate([1.5, 1.5]) cube([outter.x - 2 * 1.5, outter.y - 2 * 1.5, 100]);
 
+                        translate([- .01, 4]) cube([100, outter.y - 2 * 4, 25]);
+                        translate([4, - .01]) cube([outter.x - 2 * 4, 100, 25]);
                     }
                 }
             }
@@ -288,7 +292,7 @@ module Main() {
                 }
 
                 translate([charger_size.z - 5, - 1 - inset]) difference() {
-                    cube([5 + 1 + inset, charger_size.x + 2 * 1 + inset, 2]);
+                    cube([5 + 1 + inset, charger_size.x + 2 * 1 + inset, 3]);
                     translate([- .01, 1]) cube([5 + inset, charger_size.x + inset, 100]);
                 }
 
@@ -309,6 +313,32 @@ module Main() {
                 if (DEBUG) SdSlot();
             }
         }
+    }
+}
+
+module Cover() {
+    height = 15;
+
+    difference() {
+        union() {
+            cube([box.x, box.y, fatness]);
+            translate([fatness + inset / 2, fatness + inset / 2, - height + .01]) color("red") difference() {
+                size = [box_inner.x - inset, box_inner.y - inset, height + .02];
+                cube(size);
+                translate([1, 1, - .02]) cube([size.x - 2, size.y - 2, 100]);
+            }
+        }
+
+        // display hole
+        translate([(box_inner.x - display_size_top.x) / 2 + fatness - inset, + box_inner.y - display_size_top.y - fatness / 2, - .02]) {
+            cube([display_size_top.x + 2 * inset, display_size_top.y + 2 * inset, 100]);
+        }
+
+        // tag hole
+        translate([box.x / 2, 23, fatness - 1]) cylinder(d = 40, h = 100, $fn = 50);
+
+        // debug: top
+        // translate([-.01, -.01, -.01]) cube([box.x + .02, box.y + .02, fatness + .02]);
     }
 }
 
@@ -336,3 +366,8 @@ difference() {
     // // right wall
     // translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]);
 }
+
+//translate([0, 0, box.z + inset / 2]) // for modelling
+translate([0, - 10]) rotate([180]) // for print
+    Cover();
+
