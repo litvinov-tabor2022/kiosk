@@ -13,14 +13,14 @@ inset = .2;
 
 display_size_top = [164, 99.8, 1.5];
 display_size_mid = [165.5, 101.7, 5];
-display_size_board = [190, 105, 1.55];
+display_size_board = [190, 105.55, 1.55];
 display_size_bottom = [156, 101.7, 5];
 
 display_hole_pos = [
-        [5.25, 12.50], // top left
-        [5.25, 12.85], // bottom left
-        [4.95, 12.65], // top right
-        [4.95, 12.8], // bottom right
+        [5.25, 12.80], // top left
+        [5.25, 12.80], // bottom left
+        [4.95, 12.75], // top right
+        [4.95, 12.75], // bottom right
     ];
 display_hole_d = 3;
 
@@ -29,7 +29,7 @@ onboard_sd_pos = [1, 66];
 
 sd_conn_size = [16, 22];
 sd_size = [38, 30, 3.9];
-sd_hold_x = 15;
+sd_hold_x = 15.7;
 sd_hold_size = [5.7, 4.5, 1];
 
 pcb_size = [60, 40, 1.6];
@@ -92,6 +92,9 @@ module Display() {
         difference() {
             color("green") cube(display_size_board);
 
+            echo("Left", (display_size_board.y - display_hole_pos[0].y) - display_hole_pos[1].y);
+            echo("Right", (display_size_board.y - display_hole_pos[2].y) - display_hole_pos[3].y);
+
             /* top left     */ Hole(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y);
             /* bottom left  */ Hole(display_hole_pos[1].x, display_hole_pos[1].y);
             /* top right    */ Hole(display_size_board.x - display_hole_pos[2].x, display_size_board.y - display_hole_pos[2].y);
@@ -142,10 +145,11 @@ module BatteryHolder() {
 }
 
 module SdSlot() {
-    color("black") union() {
-        cube(sd_size);
-        translate([sd_hold_x, sd_size.y - .01]) cube(sd_hold_size);
-        translate([sd_hold_x, - sd_hold_size.y + .01]) cube(sd_hold_size);
+    union() {
+        color("black")  cube(sd_size);
+        color("black") translate([sd_hold_x, sd_size.y - .01]) cube(sd_hold_size);
+        color("black") translate([sd_hold_x, - sd_hold_size.y + .01]) cube(sd_hold_size);
+        color("gray") translate([- .1, 1.5, .8]) cube([.1, sd_size.y - 3, sd_size.z - .8]);
     }
 }
 
@@ -172,7 +176,7 @@ module Main() {
 
             translate([fatness, fatness, fatness]) {
                 // charger hole
-                translate([- fatness - .01, charger_y + 3, .2]) {
+                translate([- fatness - .01, charger_y + 2.7, .2]) {
                     cube([fatness + .02, 11, 5]);
                 }
 
@@ -182,8 +186,8 @@ module Main() {
                 }
 
                 // SD slot
-                translate([- fatness - .01, sdslot_y, 0]) {
-                    cube([fatness + .02, sd_size.y, sd_size.z]);
+                translate([- fatness - .01, sdslot_y + 1.5, .8]) {
+                    cube([fatness + .02, sd_size.y - 3, sd_size.z - .8]);
                 }
             }
         }
@@ -201,7 +205,7 @@ module Main() {
 
                     translate([display_hole_pos[0].x - 9, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
                         color("orange") cube([14, 10, 5]);
-                        translate([2, - .01]) color("blue") cube([sd_hold_size.x, sd_hold_size.y, 4.5]);
+                        translate([2 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.5]);
                     }
                 }
 
@@ -307,7 +311,7 @@ module Main() {
                     translate([- .01, 1]) cube([sd_size.x + inset, sd_size.y + 2 * inset, 100]);
                     translate([0, 4]) cube([100, size.y - 8, 100]);
 
-                    translate([sd_hold_x, - .01]) cube([sd_hold_size.x, 100, 100]);
+                    translate([sd_hold_x - inset / 2, - .01]) cube([sd_hold_size.x + inset, 100, 100]);
                 }
 
                 if (DEBUG) SdSlot();
@@ -330,7 +334,7 @@ module Cover() {
         }
 
         // display hole
-        translate([(box_inner.x - display_size_top.x) / 2 + fatness - inset, + box_inner.y - display_size_top.y - fatness / 2, - .02]) {
+        translate([(box.x - display_size_top.x) / 2 - inset, box.y - display_size_top.y - 2 * fatness - 1.3, - .02]) {
             cube([display_size_top.x + 2 * inset, display_size_top.y + 2 * inset, 100]);
         }
 
@@ -346,25 +350,26 @@ difference() {
     Main();
 
 
-    // /* PRINTING SETTINGS: */
+    //    /* PRINTING SETTINGS: */
     //
-    // // left wall:
+    //    // left wall:
     //
-    // // PCB
-    // translate([- .01, - .01, 10]) cube([fatness + .02, 60, 100]);
-    // // switch, charger
-    // translate([- .01, 55, 20]) cube([fatness + .02, 100, 100]);
-    // translate([- .01, 85, 10]) cube([fatness + .02, 100, 100]);
-    // // rest
-    // translate([- .01, 110, fatness]) cube([fatness + .02, 100, 100]);
+    //    // PCB
+    //    translate([- .01, - .01, 10]) cube([fatness + .02, 55, 100]);
+    //    // switch, charger
+    //    translate([- .01, switch_y - 5, 20]) cube([fatness + .02, 100, 100]);
+    //    translate([- .01, charger_y + 3, 10]) cube([fatness + .02, 100, 100]);
     //
     //
-    // // back wall
-    // translate([- .01, box.y - fatness - .01, fatness]) cube([box.x + .02, fatness + .02, 100]);
+    //    // back wall
+    //    translate([- .01, box.y - fatness - .01, fatness]) cube([box.x + .02, fatness + .02, 100]);
+    //
+    //    // front wall
+    //    translate([- .01, -.01, 10]) cube([box.x + .02, fatness + .02, 100]);
     //
     //
-    // // right wall
-    // translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]);
+    //    // right wall
+    //    translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]);
 }
 
 //translate([0, 0, box.z + inset / 2]) // for modelling
