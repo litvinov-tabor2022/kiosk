@@ -17,10 +17,10 @@ display_size_board = [190, 105.55, 1.55];
 display_size_bottom = [156, 101.7, 5];
 
 display_hole_pos = [
-        [5.25, 12.80], // top left
-        [5.25, 12.80], // bottom left
-        [4.95, 12.75], // top right
-        [4.95, 12.75], // bottom right
+        [5.00, 12.80], // top left
+        [5.00, 12.80], // bottom left
+        [4.75, 12.75], // top right
+        [4.75, 12.75], // bottom right
     ];
 display_hole_d = 3;
 
@@ -94,6 +94,8 @@ module Display() {
 
             echo("Left", (display_size_board.y - display_hole_pos[0].y) - display_hole_pos[1].y);
             echo("Right", (display_size_board.y - display_hole_pos[2].y) - display_hole_pos[3].y);
+            echo("Top", (display_size_board.x - display_hole_pos[2].x) - display_hole_pos[0].x);
+            echo("Bottom", (display_size_board.x - display_hole_pos[3].x) - display_hole_pos[1].x);
 
             /* top left     */ Hole(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y);
             /* bottom left  */ Hole(display_hole_pos[1].x, display_hole_pos[1].y);
@@ -343,6 +345,9 @@ module Cover() {
 
         // debug: top
         // translate([-.01, -.01, -.01]) cube([box.x + .02, box.y + .02, fatness + .02]);
+
+        // debug: front
+        // translate([fatness, fatness - .01, - height]) cube([box.x - 2*fatness, fatness, height]);
     }
 }
 
