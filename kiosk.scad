@@ -5,8 +5,8 @@ use <../modely/flexbatter.scad>
 use <../modely/buttons.scad>
 use <../modely/mfrc.scad>
 
-//DEBUG = true;
-DEBUG = false;
+DEBUG = true;
+//DEBUG = false;
 
 fatness = 2;
 inset = .2;
@@ -17,8 +17,8 @@ display_size_board = [190, 105.55, 1.55];
 display_size_bottom = [156, 101.7, 5];
 
 display_hole_pos = [
-        [5.00, 12.80], // top left
-        [5.00, 12.80], // bottom left
+        [4.90, 12.80], // top left
+        [4.90, 12.80], // bottom left
         [4.75, 12.75], // top right
         [4.75, 12.75], // bottom right
     ];
@@ -54,7 +54,7 @@ height = 30;
 display_height_total = display_size_bottom.z + display_size_board.z + display_size_mid.z + display_size_top.z;
 
 box_x = 2 + display_size_board.x + 2 * inset + sd_conn_size.x * 2;
-box_y = 0.7 + display_size_board.y + 2 * inset + pcb_size.y;
+box_y = 2 + display_size_board.y + 2 * inset + pcb_size.y;
 box_z = 35;
 
 box_inner = [box_x, box_y, box_z];
@@ -205,8 +205,8 @@ module Main() {
                         translate([display_hole_pos[0].x - 10, display_size_board.y - display_hole_pos[0].y - 10]) cube([20, 20, 5 - .01]);
                     }
 
-                    translate([display_hole_pos[0].x - 9, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
-                        color("orange") cube([14, 10, 5]);
+                    translate([display_hole_pos[0].x - 8.4, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
+                        color("orange") cube([12.9, 9.7, 5]);
                         translate([2 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.5]);
                     }
                 }
@@ -234,7 +234,7 @@ module Main() {
             }
 
             // MFRC
-            translate([73, - 1.5, - .01]) {
+            translate([71, - 1.5, - .01]) {
                 f = 1.5;
 
                 if (DEBUG) translate([f + inset / 2, MFRC_board_size().y + f + inset / 2, box_inner.z + .01]) rotate([180]) MFRC_board();
