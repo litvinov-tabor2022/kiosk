@@ -1,12 +1,10 @@
-use <../modely/boxes.scad>
 use <../modely/esp32.scad>
 use <../modely/charger-module.scad>
-use <../modely/flexbatter.scad>
 use <../modely/buttons.scad>
 use <../modely/mfrc.scad>
 
-DEBUG = true;
-//DEBUG = false;
+//DEBUG = true;
+DEBUG = false;
 
 fatness = 2;
 inset = .2;
@@ -43,9 +41,12 @@ esp32_size = ESP32_size();
 mfrc_shaft_size = Shaft_size_outter();
 charger_size = Charger_size();
 
-switch_y = 54.5;
-charger_y = 74.8;
-sdslot_y = 98;
+
+y_coef = - 1.55;
+
+switch_y = 54.5 - y_coef;
+charger_y = 74.8 - y_coef;
+sdslot_y = 98 - y_coef;
 
 height = 30;
 
@@ -175,6 +176,7 @@ module Main() {
             // DEBUG
             // translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // front wall
             // translate([fatness, box_y + fatness - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // back wall
+            // translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]); // right wall
 
             translate([fatness, fatness, fatness]) {
                 // charger hole
@@ -196,7 +198,7 @@ module Main() {
 
         translate([fatness, fatness, fatness - .01]) {
             translate([(box_inner.x - display_size_board.x) / 2, - inset + box_inner.y - display_size_board.y]) {
-                if (DEBUG) translate([0, 0, display_z]) Display();
+                //                if (DEBUG) translate([0, 0, display_z]) Display();
 
                 /* top left     */
                 union() {
@@ -207,7 +209,7 @@ module Main() {
 
                     translate([display_hole_pos[0].x - 8.4, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
                         color("orange") cube([12.9, 9.7, 5]);
-                        translate([2 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.5]);
+                        translate([2 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.3]);
                     }
                 }
 
@@ -247,6 +249,9 @@ module Main() {
                     translate([- .01, 18, 22]) cube([2, 15, 100]);
                     translate([- .01, 4]) cube([100, outter.y - 2 * 4, 18]);
                     translate([10, - .01]) cube([outter.x - 20, 100, 25]);
+
+                    // cover rail hole
+                    translate([- .01, f - .01, outter.z - 4.5]) cube([100, 1 + 2 * inset, 100]);
 
                     // debug MRFC stand:
                     // translate([1, -1]) cube([MFRC_board_size().x + 2 * inset, 100, 100]);
@@ -328,12 +333,17 @@ module Cover() {
     difference() {
         union() {
             cube([box.x, box.y, fatness]);
-            translate([fatness + inset / 2, fatness + inset / 2, - height + .01]) color("red") difference() {
-                size = [box_inner.x - inset, box_inner.y - inset, height + .02];
+            translate([fatness + inset, fatness + inset, - height + .01]) color("red") difference() {
+                size = [box_inner.x - 2 * inset, box_inner.y - 2 * inset, height + .02];
                 cube(size);
                 translate([1, 1, - .02]) cube([size.x - 2, size.y - 2, 100]);
+
+
             }
         }
+
+        // MFRC holder hole
+        translate([72, fatness - .01, - height]) color("green") cube([65, fatness, height - 4]);
 
         // display hole
         translate([(box.x - display_size_top.x) / 2 - inset, box.y - display_size_top.y - 2 * fatness - 1.3, - .02]) {
@@ -343,11 +353,11 @@ module Cover() {
         // tag hole
         translate([box.x / 2, 23, fatness - 1]) cylinder(d = 40, h = 100, $fn = 50);
 
-        // debug: top
-        // translate([-.01, -.01, -.01]) cube([box.x + .02, box.y + .02, fatness + .02]);
-
-        // debug: front
-        // translate([fatness, fatness - .01, - height]) cube([box.x - 2*fatness, fatness, height]);
+        // DEBUG
+        // translate([-.01, -.01, -.01]) cube([box.x + .02, box.y + .02, fatness + .02]); // top
+        // translate([fatness, fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // front
+        // translate([fatness, box.y - 2 * fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // back
+        // translate([box.x - 2 * fatness, fatness - .01, - height]) cube([fatness + .02, box.y - 2 * fatness, height]); // right
     }
 }
 
