@@ -10,7 +10,7 @@
 #include "PlayerDataUtils.h"
 
 #define SKILLS_PAGE_COLS 1
-#define SKILLS_PAGE_ROWS 4
+#define SKILLS_PAGE_ROWS 5
 #define SKILLS_PAGE_SIZE (SKILLS_PAGE_ROWS * SKILLS_PAGE_COLS)
 
 
@@ -85,7 +85,6 @@ private:
         for (u8 row = 0; row < SKILLS_PAGE_ROWS; row++)
             for (u8 col = 0; col < SKILLS_PAGE_COLS; col++) {
                 const u16 vpAddr = PageAddrs::VpAddrBase + row * 0x0100 + col * 0x0030;
-                const u16 spAddr = PageAddrs::SpAddrBase + row * 0x0100 + col * 0x0030;
 
                 const u8 offset = row * SKILLS_PAGE_COLS + col;
 
@@ -101,7 +100,6 @@ private:
                 Serial.printf("Showing skill: %s \n", elem->name.c_str());
 
                 if (!kiosk->display.writeTextVar(vpAddr, elem->name)) return false;
-                if (!kiosk->display.setTextDisplayColor(spAddr, Colors::Black)) return false;
             }
 
         return true;
