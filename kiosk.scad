@@ -35,7 +35,7 @@ rtc_size = [27, 28, 9.56];
 
 battery_length = 66;
 battery_dia = 19;
-batt_holder_size = [battery_dia + 2 * 1, 66 + 2 * 1, battery_dia + 1];
+batt_holder_size = [battery_dia + 2 * 1, 66 + 2 * 1, battery_dia];
 
 esp32_size = ESP32_size();
 mfrc_shaft_size = Shaft_size_outter();
@@ -134,7 +134,7 @@ module BatteryHolder() {
             translate([i * batt_holder_size.x - i, 0]) {
                 difference() {
                     cube(batt_holder_size);
-                    translate([1, 1, 1]) cube([battery_dia, 66, 100]);
+                    translate([1, 1, -.01]) cube([battery_dia, 66, 100]);
 
                     // debug:
                     // translate([-.01,-.01,-.01]) cube([1 + .02, batt_holder_size.y + .02, 100]);
