@@ -42,20 +42,24 @@ mfrc_shaft_size = Shaft_size_outter();
 charger_size = Charger_size();
 
 
-y_coef = - 1.55;
+y_coef = - 5.55;
 
 switch_y = 54.5 - y_coef;
 charger_y = 74.8 - y_coef;
 sdslot_y = 98 - y_coef;
 
+switch_z = 10;
+
 height = 30;
+
+batts = 6;
 
 // -------------------------------------
 
 display_height_total = display_size_bottom.z + display_size_board.z + display_size_mid.z + display_size_top.z;
 
 box_x = 2 + display_size_board.x + 2 * inset + sd_conn_size.x * 2;
-box_y = 2 + display_size_board.y + 2 * inset + pcb_size.y;
+box_y = 8 + display_size_board.y + 2 * inset + pcb_size.y;
 box_z = 35;
 
 box_inner = [box_x, box_y, box_z];
@@ -67,6 +71,9 @@ echo("Main - Inner box size ", box_inner.x, " x ", box_inner.y, " x ", box_inner
 display_z = box_inner.z - (display_height_total - display_size_top.z);
 
 echo("Display Z:", display_z);
+
+disp_pos = [(box_inner.x - display_size_board.x) / 2, - inset + box_inner.y - display_size_board.y - 1.5];
+batt_holder_pos = [(box_inner.x - (batt_holder_size.x * batts - (batts - 1))) / 2, 60, 0];
 
 // -------------------------------------
 
@@ -122,10 +129,8 @@ module Display() {
 }
 
 module BatteryHolder() {
-    n = 6;
-
     union() {
-        for (i = [0:1:n]) {
+        for (i = [0:1:batts - 1]) {
             translate([i * batt_holder_size.x - i, 0]) {
                 difference() {
                     cube(batt_holder_size);
@@ -156,62 +161,89 @@ module SdSlot() {
     }
 }
 
+module DispSupport(x, y, stands = true) {
+    translate([x, y]) union() {
+        outter_dia = display_hole_d + 6;
+        difference() {
+            h = display_z + display_size_bottom.z - .01;
+            color("red") cylinder(d = outter_dia, h = h, $fn = 20);
+            color("yellow") translate([0, 0, .1]) cylinder(d = display_hole_d, h = 100, $fn = 20);
+        }
+
+
+        color("green") if (stands) {
+            l = 6;
+            h = 3;
+
+            translate([- l - outter_dia / 2, - 1]) cube([l + 1, 2, h]);
+            translate([outter_dia / 2 - 1, - 1]) cube([l + 1, 2, h]);
+            translate([- 1, - l - outter_dia / 2]) cube([2, l + 1, h]);
+            translate([- 1, - 1 + outter_dia / 2]) cube([2, l + 1, h]);}
+    }
+}
+
+module DispSuppStand(x, y) {
+    outter_dia = display_hole_d + 6;
+
+    translate([x, y]) union() {
+        color("lightgreen") {
+            l = 6;
+            h = 3;
+
+            // left
+            translate([- l - outter_dia / 2, - 3 - inset / 2]) cube([l, 2, h]);
+            translate([- l - outter_dia / 2, 1 + inset / 2]) cube([l, 2, h]);
+
+            // right
+            translate([outter_dia / 2, - 3 - inset / 2]) cube([l, 2, h]);
+            translate([outter_dia / 2, 1 + inset / 2]) cube([l, 2, h]);
+
+            // up
+            translate([- 3 - inset, - l - outter_dia / 2]) cube([2, l, h]);
+            translate([1 + inset, - l - outter_dia / 2]) cube([2, l, h]);
+
+            // down
+            translate([- 3 - inset, outter_dia / 2]) cube([2, l, h]);
+            translate([1 + inset, outter_dia / 2]) cube([2, l, h]);
+        }
+    }
+}
+
 // -------------------------------------
 
 // main
 module Main() {
-    module DispSupport(x, y, h) {
-        translate([x, y]) difference() {
-            h = display_z + display_size_bottom.z - .01;
-            color("red") cylinder(d = display_hole_d + 6, h = h, $fn = 20);
-            color("yellow") translate([0, 0, .1]) cylinder(d = display_hole_d, h = 100, $fn = 20);
-        }
-    }
-
     union() {
         difference() {
-            cube(box);
-            translate([fatness, fatness, fatness]) color("blue") cube([box_inner.x, box_inner.y, 100]);
+            #cube(box);
+            translate([fatness, fatness, - .01]) color("blue") cube([box_inner.x, box_inner.y, 100]);
 
             // DEBUG
             // translate([fatness, - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // front wall
             // translate([fatness, box_y + fatness - .01, fatness]) cube([box_inner.x, fatness + .02, 100]); // back wall
             // translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]); // right wall
 
-            translate([fatness, fatness, fatness]) {
+            translate([fatness, fatness]) {
                 // charger hole
-                translate([- fatness - .01, charger_y + 2.7, .2]) {
+                translate([- fatness - .01, charger_y + 3.9, .2]) {
                     cube([fatness + .02, 11, 5]);
                 }
 
                 // switch
-                translate([- fatness - .01, switch_y + 10, 8]) {
+                translate([- fatness - .01, switch_y + 11.2, switch_z]) {
                     rotate([0, 90])cylinder(d = switch_head_dia() + 1, h = fatness + .02, $fn = 30);
                 }
 
                 // SD slot
-                translate([- fatness - .01, sdslot_y + 1.5, .8]) {
-                    cube([fatness + .02, sd_size.y - 3, sd_size.z - .8]);
+                translate([- fatness - .01, sdslot_y + 2.65, .8]) {
+                    cube([fatness + .02, sd_size.y - 2.95, sd_size.z - .8]);
                 }
             }
         }
 
         translate([fatness, fatness, fatness - .01]) {
-            translate([(box_inner.x - display_size_board.x) / 2, - inset + box_inner.y - display_size_board.y]) {
-                //                if (DEBUG) translate([0, 0, display_z]) Display();
-
-                /* top left     */
-                union() {
-                    difference() {
-                        DispSupport(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y);
-                        translate([display_hole_pos[0].x - 10, display_size_board.y - display_hole_pos[0].y - 10]) cube([20, 20, 5 - .01]);
-                    }
-
-                    translate([display_hole_pos[0].x - 8.4, display_size_board.y - display_hole_pos[0].y - 5.2]) difference() {
-                        color("orange") cube([12.9, 9.7, 5]);
-                        translate([2 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.3]);
-                    }
-                }
+            translate(disp_pos) {
+                *if (DEBUG) translate([0, 0, display_z]) Display();
 
 
                 /* bottom left  */ DispSupport(display_hole_pos[1].x, display_hole_pos[1].y);
@@ -220,26 +252,11 @@ module Main() {
             }
 
 
-            // PCB
-            translate([- 1, - 1, 0]) {
-                if (DEBUG) translate([1 + inset, 1 + inset]) Pcb();
-
-                // board bed
-                difference() {
-                    cube([pcb_size.x + 2 * (1 + inset), pcb_size.y + 2 * (1 + inset), 10]);
-                    translate([1, 1]) cube([pcb_size.x + 2 * inset, pcb_size.y + 2 * inset, 100]);
-
-                    // saving space
-                    translate([5, - .01]) cube([52, 1 + .02, 100]);
-                    translate([pcb_size.x + 1, 9]) cube([100, rtc_size.y + 1, 100]);
-                }
-            }
-
             // MFRC
-            translate([71, - 1.5, - .01]) {
+            translate([70.5, 1.4, - .01]) union() {
                 f = 1.5;
 
-                if (DEBUG) translate([f + inset / 2, MFRC_board_size().y + f + inset / 2, box_inner.z + .01]) rotate([180]) MFRC_board();
+                #if (DEBUG) translate([f + inset / 2, MFRC_board_size().y + f + inset / 2, box_inner.z + .01]) rotate([180]) MFRC_board();
 
                 difference() {
                     outter = [MFRC_board_size().x + inset + 2 * f, MFRC_board_size().y + inset + 2 * f, box_inner.z];
@@ -250,9 +267,6 @@ module Main() {
                     translate([- .01, 4]) cube([100, outter.y - 2 * 4, 18]);
                     translate([10, - .01]) cube([outter.x - 20, 100, 25]);
 
-                    // cover rail hole
-                    translate([- .01, f - .01, outter.z - 4.5]) cube([100, 1 + 2 * inset, 100]);
-
                     // debug MRFC stand:
                     // translate([1, -1]) cube([MFRC_board_size().x + 2 * inset, 100, 100]);
                 }
@@ -262,67 +276,19 @@ module Main() {
                     translate([18, 5]) difference() {
                         outter = [MFRC_board_size().x - 2 * 18, MFRC_board_size().y - 2 * 5, box_inner.z - MFRC_board_size().z - inset];
                         cube(outter);
-                        translate([1.5, 1.5]) cube([outter.x - 2 * 1.5, outter.y - 2 * 1.5, 100]);
+                        translate([f, f]) cube([outter.x - 2 * f, outter.y - 2 * f, 100]);
 
                         translate([- .01, 4]) cube([100, outter.y - 2 * 4, 25]);
                         translate([4, - .01]) cube([outter.x - 2 * 4, 100, 25]);
                     }
                 }
+
+                // connections
+                translate([19, f - .01, 25])  cube([f, MFRC_board_size().y + inset + .02, 2]);
+                translate([41.4, f - .01, 25])  cube([f, MFRC_board_size().y + inset + .02, 2]);
             }
 
-            // battery holder
-            translate([45, 55, - 1.85]) {
-                BatteryHolder();
-            }
-
-            // switch
-            translate([- .01, switch_y, - .01]) {
-                size = [5.5, 20, 18];
-                difference() {
-                    cube(size);
-                    color("red") translate([- .01, fatness]) cube([10, size.y - 2 * fatness, size.z - 1]);
-                }
-                translate([size.x - .01, 0]) difference() {
-                    color("red") cube([fatness, size.y, size.z]);
-                    // the positioning here is... wild :-|
-                    translate([- .01, size.y / 2, 8.05]) rotate([0, 90])
-                        cylinder(d = switch_hole_dia(), h = fatness + .02, $fn = 30);
-                }
-
-                if (DEBUG) translate([23, size.y / 2, 8]) rotate([0, - 90]) Switch(fatness + inset);
-            }
-
-            // charger
-            translate([inset, charger_y]) {
-                translate([- inset - .01, - 1 - inset]) {
-                    size = [5, charger_size.x + 2 * (1 + inset), 6];
-                    difference() {
-                        cube(size);
-                        translate([- .01, 1]) cube([100, charger_size.x + 2 * inset, 4.8]);
-                    }
-                }
-
-                translate([charger_size.z - 5, - 1 - inset]) difference() {
-                    cube([5 + 1 + inset, charger_size.x + 2 * 1 + inset, 3]);
-                    translate([- .01, 1]) cube([5 + inset, charger_size.x + inset, 100]);
-                }
-
-                if (DEBUG)  translate([28, - inset / 2, 1]) rotate([90, 180, - 90]) Charger();
-            }
-
-            // SD slot
-            translate([.01, sdslot_y]) union() {
-                translate([0, - 1 - inset]) difference() {
-                    size = [sd_size.x + 1 + inset, sd_size.y + 2 * (1 + inset), 5];
-                    cube(size);
-                    translate([- .01, 1]) cube([sd_size.x + inset, sd_size.y + 2 * inset, 100]);
-                    translate([0, 4]) cube([100, size.y - 8, 100]);
-
-                    translate([sd_hold_x - inset / 2, - .01]) cube([sd_hold_size.x + inset, 100, 100]);
-                }
-
-                if (DEBUG) SdSlot();
-            }
+            translate(batt_holder_pos) BatteryHolder();
         }
     }
 }
@@ -331,22 +297,20 @@ module Cover() {
     height = 15;
 
     difference() {
-        union() {
+        # union() {
             cube([box.x, box.y, fatness]);
             translate([fatness + inset, fatness + inset, - height + .01]) color("red") difference() {
                 size = [box_inner.x - 2 * inset, box_inner.y - 2 * inset, height + .02];
                 cube(size);
                 translate([1, 1, - .02]) cube([size.x - 2, size.y - 2, 100]);
-
-
             }
         }
 
-        // MFRC holder hole
-        translate([72, fatness - .01, - height]) color("green") cube([65, fatness, height - 4]);
-
         // display hole
-        translate([(box.x - display_size_top.x) / 2 - inset, box.y - display_size_top.y - 2 * fatness - 1.3, - .02]) {
+        d_hole_pos = [disp_pos.x + (display_size_board.x - display_size_top.x) / 2 + fatness - inset,
+                        disp_pos.y + (display_size_board.y - display_size_top.y) / 2 + fatness - inset, - .02];
+
+        translate(d_hole_pos) {
             cube([display_size_top.x + 2 * inset, display_size_top.y + 2 * inset, 100]);
         }
 
@@ -358,36 +322,195 @@ module Cover() {
         // translate([fatness, fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // front
         // translate([fatness, box.y - 2 * fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // back
         // translate([box.x - 2 * fatness, fatness - .01, - height]) cube([fatness + .02, box.y - 2 * fatness, height]); // right
+        // translate([fatness - .01, fatness - .01, - height]) cube([fatness + .02, box.y - 2 * fatness, height]); // left
     }
 }
 
-difference() {
-    Main();
+module Bottom() {
+    height = 15;
 
+    difference() {
+        union() {
+            # color("violet") cube([box.x, box.y, fatness]);
 
-    //    /* PRINTING SETTINGS: */
-    //
-    //    // left wall:
-    //
-    //    // PCB
-    //    translate([- .01, - .01, 10]) cube([fatness + .02, 55, 100]);
-    //    // switch, charger
-    //    translate([- .01, switch_y - 5, 20]) cube([fatness + .02, 100, 100]);
-    //    translate([- .01, charger_y + 3, 10]) cube([fatness + .02, 100, 100]);
-    //
-    //
-    //    // back wall
-    //    translate([- .01, box.y - fatness - .01, fatness]) cube([box.x + .02, fatness + .02, 100]);
-    //
-    //    // front wall
-    //    translate([- .01, -.01, 10]) cube([box.x + .02, fatness + .02, 100]);
-    //
-    //
-    //    // right wall
-    //    translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]);
+            translate([fatness + inset, fatness + inset, - .01]) color("darkred") difference() {
+                size = [box_inner.x - 2 * inset, box_inner.y - 2 * inset, height + .02];
+                cube(size);
+                translate([1, 1, - .02]) cube([size.x - 2, size.y - 2, 100]);
+
+                // charger hole
+                translate([- .01, charger_y, 2.8]) {
+                    cube([fatness + .02, charger_size.x + 1.5, 5]);
+                }
+
+                // switch
+                translate([- 0 - .01, switch_y + 1.3, switch_z - 6]) {
+                    color("blue") cube([1 + .02, 19, 20]);
+                }
+
+                // SD slot
+                translate([- 0 - .01, sdslot_y + 2.4, 3]) {
+                    cube([fatness + .02, sd_size.y - 3, sd_size.z - 1]);
+                }
+            }
+
+            translate([fatness + 1.2, fatness + 1.2, fatness - .01]) {
+                // switch
+                translate([- 1 - .01, switch_y, - .01]) {
+                    size = [5.5, 20, switch_z + 10];
+                    difference() {
+                        cube(size);
+                        color("red") translate([- .01, fatness]) cube([10, size.y - 2 * fatness, size.z - 1]);
+                    }
+                    #translate([size.x - .01, 0]) difference() {
+                        color("green") cube([fatness, size.y, size.z]);
+                        // the positioning here is... wild :-|
+                        translate([- .01, size.y / 2, switch_z + .3]) rotate([0, 90])
+                            cylinder(d = switch_hole_dia(), h = fatness + .02, $fn = 30);
+                    }
+
+                    if (DEBUG) translate([23, size.y / 2, switch_z + .3]) rotate([0, - 90]) Switch(fatness + inset);
+                }
+
+                // charger
+                translate([- 1 - .01, charger_y]) {
+                    translate([- .01, - 1 - inset]) {
+                        size = [5, charger_size.x + 2 * (1 + inset), 6];
+                        difference() {
+                            cube(size);
+                            translate([- .01, 1]) cube([100, charger_size.x + 2 * inset, 4.8]);
+                        }
+                    }
+
+                    translate([charger_size.z - 5, - 1 - inset]) difference() {
+                        cube([5 + 1 + inset, charger_size.x + 2 * 1 + inset, 3]);
+                        translate([- .01, 1]) cube([5 + inset, charger_size.x + inset, 100]);
+                    }
+
+                    if (DEBUG)  translate([28, - inset / 2, 1]) rotate([90, 180, - 90]) Charger();
+                }
+
+                // SD slot
+                translate([inset / 2, sdslot_y]) union() {
+                    translate([- inset / 2, - 1 - inset]) difference() {
+                        size = [sd_size.x + 1 + inset, sd_size.y + 2 * (1 + inset), 5];
+                        cube(size);
+                        translate([- .01, 1]) cube([sd_size.x + inset, sd_size.y + 2 * inset, 100]);
+                        translate([0, 4]) cube([100, size.y - 8, 100]);
+
+                        translate([sd_hold_x - inset / 2, - .01]) cube([sd_hold_size.x + 2 * inset, 100, 100]);
+                    }
+
+                    if (DEBUG) SdSlot();
+                }
+
+                // display supports / stands
+                translate(disp_pos) translate([- 1 - inset, - 1 - inset]) {
+
+                    /* top left    */
+                    union() {
+                        difference() {
+                            DispSupport(display_hole_pos[0].x, display_size_board.y - display_hole_pos[0].y, false);
+                            translate([display_hole_pos[0].x - 10, display_size_board.y - display_hole_pos[0].y - 10])
+                                cube([20, 20, 5 - .01]);
+                        }
+
+                        translate([display_hole_pos[0].x - 7.2, display_size_board.y - display_hole_pos[0].y - 4.499]) difference() {
+                            color("orange") cube([11.73, 9, 5]);
+                            translate([2.1 - inset / 2, - .01]) color("blue") cube([sd_hold_size.x + inset, sd_hold_size.y, 4.3]);
+                        }
+                    }
+
+                    /* bottom left */ DispSuppStand(display_hole_pos[1].x, display_hole_pos[1].y);
+                    /* top right   */ DispSuppStand(display_size_board.x - display_hole_pos[2].x, display_size_board.y - display_hole_pos[2]
+                    .y);
+                    /* bottom right*/ DispSuppStand(display_size_board.x - display_hole_pos[3].x, display_hole_pos[3].y);
+                }
+
+                if (DEBUG) translate([inset, inset, 2.2]) Pcb();
+
+                // board bed
+                translate([- 1, - 1]) difference() {
+                    cube([pcb_size.x + 2 * (1 + inset), pcb_size.y + 2 * (1 + inset), 10]);
+                    translate([1, 1, - .01]) cube([pcb_size.x + 2 * inset, pcb_size.y + 2 * inset, 100]);
+
+                    // saving space
+                    translate([5, - .01]) cube([52, 1 + .02, 100]);
+                    translate([pcb_size.x + 1, 9]) cube([100, rtc_size.y + 1, 100]);
+                }
+
+                // MFRC border
+                translate([68.3 - inset, - 1, - .01]) difference() {
+                    inner_f = 1.5;
+                    outter_f = 1;
+                    inner = [MFRC_board_size().x + inset + 2 * inner_f, MFRC_board_size().y + inset + 2 * inner_f, box_inner.z];
+                    outter = [inner.x + 2 * outter_f + 2 * inset, inner.y + 2 * outter_f + 2 * inset, 10];
+                    cube(outter);
+                    translate([outter_f, outter_f, - .01]) cube([inner.x + 2 * inset, inner.y + 2 * inset, 100]);
+
+                    translate([- .01, 18, 22]) cube([2, 15, 100]);
+                    translate([- .01, 4]) cube([100, outter.y - 2 * 4, 18]);
+                    translate([10, - .01]) cube([outter.x - 20, 100, 25]);
+                }
+            }
+
+            // battery holder border
+            translate([fatness + batt_holder_pos.x - 1 - inset, fatness + batt_holder_pos.y - 1 - inset, fatness - .01]) difference() {
+                outter_f = 1;
+
+                inner = [batt_holder_size.x * batts - (batts - 1), batt_holder_size.y, batt_holder_size.z];
+                outter = [inner.x + 2 * outter_f + 2 * inset, inner.y + 2 * outter_f + 2 * inset, 5];
+
+                cube(outter);
+                translate([outter_f, outter_f, - .01]) cube([inner.x + 2 * inset, inner.y + 2 * inset, 100]);
+
+                translate([- .01, 18, 22]) cube([2, 15, 100]);
+                translate([- .01, 4]) cube([200, outter.y - 2 * 4, 18]);
+                translate([10, - .01]) cube([outter.x - 20, 200, 25]);
+            }
+        }
+
+        // DEBUG
+        // translate([- .01, - .01, - .01]) cube([box.x + .02, box.y + .02, fatness + .02]); // top
+        // translate([fatness, fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // front
+        // translate([fatness, box.y - 2 * fatness - .01, - height]) cube([box.x - 2 * fatness, fatness, height]); // back
+        // translate([box.x - 2 * fatness, fatness - .01, - height]) cube([fatness + .02, box.y - 2 * fatness, height]); // right
+        // translate([fatness + inset - .01, fatness - .01, - 0.1]) cube([1 + .02, box.y - 2 * fatness, 100]); // left
+    }
 }
 
-//translate([0, 0, box.z + inset / 2]) // for modelling
-translate([0, - 10]) rotate([180]) // for print
+translate([0, 0, fatness + inset / 2])
+    difference() {
+        Main();
+
+
+        //    /* PRINTING SETTINGS: */
+        //
+        //    // left wall:
+        //
+        //    // PCB
+        //    translate([- .01, - .01, 10]) cube([fatness + .02, 55, 100]);
+        //    // switch, charger
+        //    translate([- .01, switch_y - 5, 20]) cube([fatness + .02, 100, 100]);
+        //    translate([- .01, charger_y + 3, 10]) cube([fatness + .02, 100, 100]);
+        //
+        //
+        //    // back wall
+        //    translate([- .01, box.y - fatness - .01, fatness]) cube([box.x + .02, fatness + .02, 100]);
+        //
+        //    // front wall
+        //    translate([- .01, -.01, 10]) cube([box.x + .02, fatness + .02, 100]);
+        //
+        //
+        //    // right wall
+        //    translate([box.x - fatness - .01, - .01, fatness]) cube([fatness + .02, box.y + .02, 100]);
+    }
+
+//translate([0, 0]) // for modelling
+    translate([250, 0]) // for print
+    Bottom();
+
+//translate([0, 0, fatness + box.z + inset]) // for modelling
+    translate([0, - 10]) rotate([180]) // for print
     Cover();
 
