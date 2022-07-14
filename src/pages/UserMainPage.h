@@ -14,6 +14,7 @@ public:
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         if (addr == PageAddrs::SkillsButton) {
+            if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
             switchPage(Page_UserSkills);
         }
     }

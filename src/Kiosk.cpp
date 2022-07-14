@@ -57,7 +57,10 @@ bool Kiosk::begin() {
     }
 
     framework.addOnConnectCallback([this](PlayerData playerData, const bool isReload) {
-        // ignore the `isReload`, the code here counts with both options
+        if (!isReload) {
+            if (!display.beep(100)) { Debug.println("Could not beep"); }
+        }
+
         const auto userName = getPlayerMetadata(playerData.user_id).name;
         Debug.printf("Connected player: %s (ID %d)\n", userName.c_str(), playerData.user_id);
         handleConnectedTag(playerData);
@@ -69,8 +72,6 @@ bool Kiosk::begin() {
 }
 
 void Kiosk::handleConnectedTag(PlayerData playerData) {
-    if (!display.beep(100)) { Debug.println("Could not beep"); }
-
     if (playerData.user_id == ADMIN_USER_ID) {
         adminTagPresent = true;
         Debug.println("Admin tag inserted");
@@ -109,11 +110,14 @@ void Kiosk::handleDisconnectedTag() {
             Debug.println("Could not reload page");
         }
     } else {
-        pagesManager->switchPage(Page_Home);
         if (!display.setBrightness(0)) {
             Debug.println("Could not set brightness!");
         }
-        if (!display.beep(100)) { Debug.println("Could not beep"); }
+        if (!pagesManager->switchPage(Page_Home)) {
+            Debug.println("Could not switch page");
+            if (!display.beep(1000)) { Debug.println("Could not beep"); }
+            return;
+        }
     }
 }
 

@@ -40,17 +40,19 @@ public:
             default:
                 // this is a failsafe so the display doesn't generate invalid transactions
                 Debug.println("Invalid action!! WTF?!");
+                if (!kiosk->display.beep(2000)) { Debug.println("Could not beep"); }
                 return;
         }
 
         if (!framework->writePlayerData(playerData)) {
             Debug.println("Could not update data on tag!");
-            // TODO recover 😱
+            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
             return;
         }
 
         if (!framework->storage.appendTransaction(transaction)) {
             Debug.println("Could not log transaction!");
+            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
             return;
         }
 
@@ -72,6 +74,8 @@ public:
         }
 
         if (playerData.bonus_points <= 0) switchPage(Page_UserMain);
+
+        if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
     }
 
     bool beforeLoad() override {

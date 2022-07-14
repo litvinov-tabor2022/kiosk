@@ -357,7 +357,7 @@ private:
 
         if (!framework->writePlayerData(newData)) {
             Debug.println("Could not write the data!");
-            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+            // not beeping, that's done on higher level
             return false;
         }
 
@@ -367,9 +367,6 @@ private:
         }
 
         playerData = newData;
-
-        if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
-
         return true;
     }
 

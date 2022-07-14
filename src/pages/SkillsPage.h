@@ -24,9 +24,11 @@ public:
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         switch (addr) {
             case PageAddrs::BackButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 switchPage(Page_UserMain);
                 break;
             case PageAddrs::PrevButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 if (pageNo == 0) return;
 
                 pageNo--;
@@ -34,6 +36,7 @@ public:
                 beforeLoad();
                 break;
             case PageAddrs::NextButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 if (pageNo == maxPageNo) return;
 
                 pageNo++;
