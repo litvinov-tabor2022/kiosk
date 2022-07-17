@@ -337,24 +337,6 @@ private:
     }
 
     bool writeToTagAndCommit(const PlayerData &newData, const Transaction &transaction) {
-        // I curse unsigned types in C++.
-        if (newData.strength < 0 || newData.strength > 200) {
-            Debug.println("Could not decrease strength under 0!");
-            return false;
-        }
-        if (newData.magic < 0 || newData.magic > 200) {
-            Debug.println("Could not decrease magic under 0!");
-            return false;
-        }
-        if (newData.dexterity < 0 || newData.dexterity > 200) {
-            Debug.println("Could not decrease dexterity under 0!");
-            return false;
-        }
-        if (newData.bonus_points < 0 || newData.bonus_points > 200) {
-            Debug.println("Could not decrease bonus points under 0!");
-            return false;
-        }
-
         if (!framework->writePlayerData(newData)) {
             Debug.println("Could not write the data!");
             // not beeping, that's done on higher level
