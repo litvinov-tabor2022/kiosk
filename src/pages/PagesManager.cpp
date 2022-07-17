@@ -54,7 +54,21 @@ bool PagesManager::switchPage(PageId pageId) {
 }
 
 void PagesManager::handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) {
+    {
+        std::lock_guard<std::mutex> lg(asyncDataMutex);
+        if (handlingAsyncData) {
+            Debug.println("Already handling another async data, skipping");
+            return;
+        }
+        handlingAsyncData = true;
+    }
+
     currentPage->handleAsyncDisplayData(addr, data, dataLen);
+
+    {
+        std::lock_guard<std::mutex> lg(asyncDataMutex);
+        handlingAsyncData = false;
+    }
 }
 
 PagesManager::PagesManager(Kiosk *kiosk) : kiosk(kiosk) {}

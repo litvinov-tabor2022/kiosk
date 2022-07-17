@@ -44,6 +44,9 @@ private:
     DisplayPage *currentPage;
     std::mutex switchPageMutex;
 
+    std::mutex asyncDataMutex;
+    bool handlingAsyncData = false;
+
     // pages:
     HomePage homePage = HomePage(kiosk, [this](const PageId pageId) { this->switchPage(pageId); });
 
