@@ -117,8 +117,16 @@ private:
         const u8 col = (a % 0x0100) / 0x0030;
 
         const auto skill = *(kiosk->skillsList->getSkillsPageStart(pageNo, SKILLS_PAGE_SIZE) + row * SKILLS_PAGE_COLS + col);
+        const bool removing = playerHasSkill(skill.skill);
 
-        if (playerHasSkill(skill.skill)) {
+        Transaction transaction = Transaction{
+                .time = framework->getCurrentTime(),
+                .device_id = framework->getDeviceConfig().deviceId,
+                .user_id = (u16) playerData.user_id,
+                .skill =  removing ? (i16)(-1 * (i16)skill.skill) : (i16)skill.skill
+        };
+
+        if (removing) {
             Debug.printf("Removing skill: %s, ID %d\n", skill.name.c_str(), skill.skill);
             PlayerDataUtils::removeSkill(skill.skill, &playerData);
             if (!framework->writePlayerData(playerData)) {
@@ -135,6 +143,16 @@ private:
                 return;
             }
         }
+
+        // written to tag, let's insert the transaction
+
+        if (!framework->storage.appendTransaction(transaction)) {
+            Debug.println("Could not log transaction!");
+            if (!kiosk->display.beep(1000)) { Debug.println("Could not beep"); }
+            return;
+        }
+
+        Debug.println("User's skills were changed");
     }
 
     [[nodiscard]] bool playerHasSkill(const u16 id) const {
