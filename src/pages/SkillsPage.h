@@ -29,26 +29,26 @@ public:
                 break;
             case PageAddrs::PrevButton:
                 if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
-                if (pageNo == 0) return;
+                if (pageNo == 1) return;
 
                 pageNo--;
-                if (pageNo < 0) pageNo = 0;
+                if (pageNo <= 0) pageNo = 1;
                 beforeLoad();
                 break;
             case PageAddrs::NextButton:
                 if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
-                if (pageNo >= maxPageNo) return;
+                if (pageNo > maxPageNo) return;
 
                 pageNo++;
-                Serial.printf("New page %d, max %d\n", pageNo, maxPageNo);
                 if (pageNo >= maxPageNo) pageNo = (i8) maxPageNo;
+                Serial.printf("New page %d, max %d\n", pageNo, maxPageNo);
                 beforeLoad();
                 break;
         }
     }
 
     bool beforeLoad() override {
-        if (shown) { // reload?
+        if (!shown) { // reload?
             pageNo = 1; // yes - natural index, not 0
         }
         shown = true;
@@ -67,7 +67,7 @@ public:
         }
 
         ownedSkillsList = new SkillsList(skillsList);
-        maxPageNo = ownedSkillsList->getLength() / SKILLS_PAGE_SIZE;
+        maxPageNo = ceil((float) ownedSkillsList->getLength() / (float) SKILLS_PAGE_SIZE);
 
         if (!displaySkillsPage()) {
             Debug.println("Could not display skills!");
@@ -89,15 +89,18 @@ private:
         const auto it = ownedSkillsList->getSkillsPageStart(pageNo - 1, SKILLS_PAGE_SIZE);
         const u8 count = ownedSkillsList->getLength();
 
-        Debug.printf("Showing page %d/%d; %d/%d user's skills\n", pageNo, maxPageNo, SKILLS_PAGE_SIZE, count);
+        Debug.printf("Showing page %d/%d\n", pageNo, maxPageNo);
 
         for (u8 row = 0; row < SKILLS_PAGE_ROWS; row++)
             for (u8 col = 0; col < SKILLS_PAGE_COLS; col++) {
                 const u16 vpAddr = PageAddrs::VpAddrBase + row * 0x0100 + col * 0x0030;
 
                 const u8 offset = row * SKILLS_PAGE_COLS + col;
+                const u8 offsetTotal = (pageNo - 1) * SKILLS_PAGE_SIZE + offset;
 
-                if (offset >= count) {
+                Serial.printf("offset: %d, offsetTotal: %d, count %d\n", offset, offsetTotal, count);
+
+                if (count < SKILLS_PAGE_SIZE && offset >= count) {
                     // for cases there's not enough skills to fill a single page...
                     // we need to empty all the unused fields then
                     if (!kiosk->display.writeTextVar(vpAddr, "")) return false;

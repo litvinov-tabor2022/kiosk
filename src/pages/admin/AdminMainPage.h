@@ -83,11 +83,14 @@ public:
             case PageAddrs::Skills:
                 if (!checkUserTagPresent("show skills page")) return;
 
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
                 switchPage(Page_Admin_Skills);
                 break;
 
             case PageAddrs::ServiceModeToggle:
                 bool started;
+
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
 
                 if (!framework->synchronizationMode.toggle()) {
                     Debug.println("Could not toggle synchronization mode!");

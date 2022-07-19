@@ -28,9 +28,13 @@ public:
 
         switch (addr) {
             case PageAddrs::BackButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+
                 switchPage(Page_Admin_Main);
                 break;
             case PageAddrs::PrevButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+
                 if (pageNo == 0) return;
 
                 pageNo--;
@@ -38,6 +42,8 @@ public:
                 beforeLoad();
                 break;
             case PageAddrs::NextButton:
+                if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
+
                 if (pageNo == maxPageNo) return;
 
                 pageNo++;
