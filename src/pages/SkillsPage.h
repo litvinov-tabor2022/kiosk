@@ -37,7 +37,7 @@ public:
                 break;
             case PageAddrs::NextButton:
                 if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
-                if (pageNo == maxPageNo) return;
+                if (pageNo >= maxPageNo) return;
 
                 pageNo++;
                 Serial.printf("New page %d, max %d\n", pageNo, maxPageNo);
@@ -48,6 +48,11 @@ public:
     }
 
     bool beforeLoad() override {
+        if (shown) { // reload?
+            pageNo = 1; // yes - natural index, not 0
+        }
+        shown = true;
+
         Debug.printf("Loading skills page, page %d\n", pageNo);
 
         playerData = kiosk->getLastPlayerData();
@@ -73,6 +78,7 @@ public:
     }
 
     bool beforeUnload() override {
+        shown = false;
         Debug.println("Unloading skills page");
         free(ownedSkillsList);
         return true;
@@ -80,10 +86,10 @@ public:
 
 private:
     bool displaySkillsPage() {
-        const auto it = ownedSkillsList->getSkillsPageStart(pageNo, SKILLS_PAGE_SIZE);
+        const auto it = ownedSkillsList->getSkillsPageStart(pageNo - 1, SKILLS_PAGE_SIZE);
         const u8 count = ownedSkillsList->getLength();
 
-        Debug.printf("Showing %d/%d user's skills\n", SKILLS_PAGE_SIZE, count);
+        Debug.printf("Showing page %d/%d; %d/%d user's skills\n", pageNo, maxPageNo, SKILLS_PAGE_SIZE, count);
 
         for (u8 row = 0; row < SKILLS_PAGE_ROWS; row++)
             for (u8 col = 0; col < SKILLS_PAGE_COLS; col++) {
@@ -115,7 +121,8 @@ private:
     SkillsList *ownedSkillsList;
     PlayerData playerData;
     u8 maxPageNo;
-    i8 pageNo = 0; // yes, i8... it's more convenient for handling the overflow
+    i8 pageNo = 1; // yes, i8... it's more convenient for handling the overflow; it's NOT indexed from 0
+    bool shown = false;
 };
 
 
