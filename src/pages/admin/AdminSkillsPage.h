@@ -22,6 +22,7 @@ public:
 
     void handleAsyncDisplayData(const u16 addr, const u8 *data, const u8 dataLen) override {
         if (addr >= 0x3000 && addr <= 0x3FFF) {
+            if (!kiosk->display.beep(100)) { Debug.println("Could not beep"); }
             handleSkillsClick(addr);
             return;
         }
